@@ -5,7 +5,7 @@ console script. To run this script uncomment the following lines in the
 [options.entry_points] section in setup.cfg:
 
     console_scripts =
-         fibonacci = kedlang.skeleton:run
+         kedlang = kedlang.shell:run
 
 Then run `python setup.py install` which will install the command `fibonacci`
 inside your current environment.
