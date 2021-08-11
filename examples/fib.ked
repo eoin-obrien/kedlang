@@ -1,0 +1,16 @@
+// Recursive implementation of fibonacci sequence
+remember fib( €n ) {
+    eh ( €n is 0 ) {
+        return 0 like
+    } orEh ( €n is 1 ) {
+        return 1 like
+    }
+    return fib( 1 awayFrom €n ) plus fib( 2 awayFrom €n ) like
+}
+
+// Print first 10 terms of sequence
+remember €i = 0 like
+eraGoOnSure( €i is not 10 ){
+    saysI 'fib( ' em €i em ' ) = ' em fib( €i ) like
+    €i = €i plus 1 like
+}
