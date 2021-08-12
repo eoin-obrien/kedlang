@@ -21,7 +21,7 @@ class KedParser(Parser):
         ("nonassoc", IF),
         ("nonassoc", ELIF),
         ("nonassoc", ELSE),
-        # TODO assignment is right-assoc
+        ("right", "="),
         ("left", OR),
         ("left", AND),
         ("left", EQ, STRICTEQ),
@@ -312,13 +312,13 @@ class KedParser(Parser):
     def assignment_expression(self, p: YaccProduction):
         return p[0]
 
-    @_("variable assignment_operator assignment_expression")
+    @_('variable "=" assignment_expression')
     def assignment_expression(self, p: YaccProduction):
         return ast.Assign(p.variable, p.assignment_expression)
 
-    @_('"="')
-    def assignment_operator(self, p: YaccProduction):
-        return None
+    # @_('"="')
+    # def assignment_operator(self, p: YaccProduction):
+    #     return None
 
     @_("NOT", '"!"')
     def unary_operator(self, p: YaccProduction):

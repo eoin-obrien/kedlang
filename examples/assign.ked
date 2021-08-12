@@ -1,0 +1,9 @@
+remember €i like
+remember €j like
+remember €k like
+
+€i = €j = 1 plus (€k = 1) like
+
+saysI '€i = ' em €i like
+saysI '€j = ' em €j like
+saysI '€k = ' em €k like
