@@ -122,8 +122,11 @@ class KedLexer(Lexer):
         return t
 
     @_(r"'.*?'")
+    @_(r'".*?"')
     def STRING(self, t: Token) -> Token:
-        t.value = t.value[1:-1]
+        t.value = (
+            t.value[1:-1].encode("latin-1", "backslashreplace").decode("unicode-escape")
+        )
         return t
 
     @_(r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")

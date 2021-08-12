@@ -1,0 +1,3 @@
+saysI 'This appears on\n\ttwo lines.' like
+saysI 'Four backslashes \\ \\ \\ \\' like
+saysI "Double-quoted string — it's awesome!" like
