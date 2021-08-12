@@ -1,0 +1,2 @@
+saysI 'Executing import_target.ked...' like
+remember €imported_value = 'import!' like

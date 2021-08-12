@@ -4,7 +4,7 @@ import os
 import sys
 from typing import List
 
-from kedlang import __version__, interpreter, parser
+from kedlang import __version__
 
 from .interpreter import KedInterpreter
 from .lexer import KedLexer
@@ -72,12 +72,12 @@ def main(args):
     setup_logging(args.loglevel)
     lexer = KedLexer()
     parser = KedParser()
-    interpreter = KedInterpreter(lexer, parser)
+    interpreter = KedInterpreter(lexer, parser, cwd=args.file)
     with open(args.file) as f:
         code = f.read()
     tokens = lexer.tokenize(code)
     ast = parser.parse(tokens)
-    _logger.debug('Parsed AST: %s', ast)
+    _logger.debug("Parsed AST: %s", ast)
     interpreter.interpret(ast)
 
 

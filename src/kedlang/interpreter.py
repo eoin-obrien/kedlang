@@ -3,8 +3,10 @@ import os
 import time
 from typing import Any, Union
 
-from . import ast, exception, lexer, parser, stack, visitor
+from . import ast, exception, lexer, parser, visitor
 from .builtins import to_ked_boolean, to_ked_number, to_ked_string
+from .callstack import CallStack, Frame, GlobalFrame
+from .cwdstack import CWDStack
 from .symbol import Symbol
 
 
@@ -15,24 +17,21 @@ class KedInterpreter(visitor.KedASTVisitor):
         super().__init__()
         self.parser = parser
         self.lexer = lexer
-        self.call_stack = stack.CallStack()
-        self.cwd_stack = [cwd or os.getcwd()]
+
+        # Track the current working directory
+        self.cwd_stack = CWDStack()
+        self.cwd_stack.push(cwd or os.getcwd())
 
         # Create global stack frame
-        self.call_stack.push(stack.GlobalFrame(name="global"))
+        self.call_stack = CallStack()
+        self.call_stack.push(GlobalFrame(name="global"))
 
     def interpret(self, ast: ast.KedAST) -> Any:
         return self.visit(ast)
 
     @property
     def cwd(self) -> str:
-        return self.cwd_stack[-1]
-
-    def push_cwd(self, cwd: str):
-        self.cwd_stack.append(cwd)
-
-    def pop_cwd(self) -> str:
-        return self.cwd_stack.pop()
+        return self.cwd_stack.peek()
 
     @property
     def current_scope(self):
@@ -103,23 +102,21 @@ class KedInterpreter(visitor.KedASTVisitor):
         raise exception.Return(self.visit(node.value))
 
     def visit_Print(self, node: ast.Print) -> None:
-        value = to_ked_string(self.visit(node.value))
+        value = to_ked_string(self.resolve(node.value))
         print(value)
 
     def visit_Import(self, node: ast.Import) -> None:
-        import_path = os.path.join(self.cwd, self.visit(node.name))
-        import_dir = os.path.dirname(os.path.realpath(import_path))
-
+        import_path = os.path.realpath(os.path.join(self.cwd, self.resolve(node.name)))
         try:
             with open(import_path) as f:
-                ast = parser.parse(lexer.tokenize(f.read()))
+                ast = self.parser.parse(self.lexer.tokenize(f.read()))
         except FileNotFoundError:
             if node.is_strict:
-                raise ImportError("No such file or directory: '" + import_path + "'")
+                raise ImportError(f"No such file or directory: '{import_path}'")
         else:
-            self.push_cwd(import_dir)
+            self.cwd_stack.push(import_path)
             self.visit(ast)
-            self.pop_cwd()
+            self.cwd_stack.pop()
 
     def visit_BinaryOp(self, node: ast.BinaryOp) -> None:
         left = self.resolve(node.left)
@@ -187,7 +184,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         func_body = node.body
 
         def func_impl(*args):
-            frame = stack.Frame(func_name, parent=self.current_scope)
+            frame = Frame(func_name, parent=self.current_scope)
             # TODO match arity? No, but add spread params
             # Add parameter symbols to stack frame
             for (param, arg) in zip(func_params, args):
