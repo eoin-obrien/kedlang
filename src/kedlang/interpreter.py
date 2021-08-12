@@ -1,3 +1,4 @@
+import operator
 import os
 import time
 from typing import Any, Union
@@ -123,54 +124,53 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_BinaryOp(self, node: ast.BinaryOp) -> None:
         left = self.resolve(node.left)
         right = self.resolve(node.right)
+        op = node.op.__class__
 
-        # TODO should operators coerce types?
+        number_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+        }
 
-        # Arithmetic operators
-        if isinstance(node.op, ast.Add):
-            return left + right
-        elif isinstance(node.op, ast.Sub):
-            return left - right
-        elif isinstance(node.op, ast.Mult):
-            return left * left
-        elif isinstance(node.op, ast.Div):
-            return left / right
-        elif isinstance(node.op, ast.Mod):
-            return left % right
+        if op in number_ops:
+            return number_ops[op](to_ked_number(left), to_ked_number(right))
 
-        # String operators
-        if isinstance(node.op, ast.Concat):
-            return to_ked_string(left) + to_ked_string(right)
+        string_ops = {
+            ast.Concat: operator.add,
+        }
 
-        # Comparison operators
-        if isinstance(node.op, ast.Eq):
-            return to_ked_string(left) == to_ked_string(right)
-        elif isinstance(node.op, ast.NotEq):
-            return to_ked_string(left) != to_ked_string(right)
-        elif isinstance(node.op, ast.NotStrictEq):
-            return not (left == right and type(left) == type(right))
-        elif isinstance(node.op, ast.StrictEq):
-            return left == right and type(left) == type(right)
+        if op in string_ops:
+            return string_ops[op](to_ked_string(left), to_ked_string(right))
 
-        # Logical operators
-        if isinstance(node.op, ast.And):
-            return left and right
-        elif isinstance(node.op, ast.Or):
-            return left or right
+        is_eq = lambda a, b: to_ked_string(a) == to_ked_string(b)
+        is_strict_eq = lambda a, b: a == b and type(a) == type(b)
+        logic_ops = {
+            ast.And: operator.and_,
+            ast.Or: operator.or_,
+            ast.Eq: is_eq,
+            ast.NotEq: lambda a, b: not is_eq(a, b),
+            ast.StrictEq: is_strict_eq,
+            ast.NotStrictEq: lambda a, b: not is_strict_eq(a, b),
+        }
 
-        raise TypeError("Unknown binary operator " + type(node.op).__name__)
+        if op in logic_ops:
+            return logic_ops[op](left, right)
+
+        raise TypeError("Unknown binary operator " + op.__name__)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
         operand = self.resolve(node.operand)
 
         if isinstance(node.op, ast.UAdd):
-            return +operand
+            return +to_ked_number(operand)
         elif isinstance(node.op, ast.USub):
-            return -operand
+            return -to_ked_number(operand)
         elif isinstance(node.op, ast.Not):
             return not operand
 
-        raise TypeError("Unknown unary operator " + type(node.op).__name__)
+        raise TypeError("Unknown unary operator " + node.op.__class__.__name__)
 
     def visit_NoOp(self, node: ast.NoOp) -> None:
         pass
