@@ -1,3 +1,7 @@
+class SemanticError(Exception):
+    pass
+
+
 class Break(Exception):
     pass
 

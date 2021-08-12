@@ -1,5 +1,8 @@
 import enum
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Type, Union
+
+from kedlang.exception import SemanticError
+from kedlang.symbol import Symbol
 
 from . import builtins
 
@@ -13,27 +16,40 @@ class Frame:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.__name}>"
 
-    def __getitem__(self, key):
+    def declare(self, key: Union[Symbol, str], value=None) -> None:
+        key = str(key)
+        if key in self._members:
+            raise SemanticError(
+                f"Symbol {key} has already been declared in scope {self}"
+            )
+        self._members[key] = value
+
+    def fetch(self, key: Union[Symbol, str]) -> Any:
+        key = str(key)
         if key in self._members:
             return self._members[key]
         elif self.__parent is not None:
-            return self.__parent[key]
+            return self.__parent.fetch(key)
         else:
-            raise KeyError(key)
+            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
 
-    def __setitem__(self, key, value):
-        self._members[key] = value
+    def assign(self, key: Union[Symbol, str], value: Any) -> None:
+        key = str(key)
+        if key in self._members:
+            self._members[key] = value
+        elif self.__parent is not None:
+            self.__parent.assign(key, value)
+        else:
+            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
 
-    def __delitem__(self, key):
+    def delete(self, key: Union[Symbol, str]) -> None:
+        key = str(key)
         if key in self._members:
             del self._members[key]
         elif self.__parent is not None:
-            del self.__parent[key]
+            self.__parent.delete(key)
         else:
-            raise KeyError(key)
-
-    def __contains__(self, key):
-        return key in self._members
+            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
 
 
 class GlobalFrame(Frame):
@@ -41,9 +57,9 @@ class GlobalFrame(Frame):
         super().__init__(name, parent=None)
 
         # Init global frame with builtins
-        self["boolean"] = builtins.to_ked_boolean
-        self["number"] = builtins.to_ked_number
-        self["string"] = builtins.to_ked_string
+        self.declare(Symbol("boolean"), builtins.to_ked_boolean)
+        self.declare(Symbol("number"), builtins.to_ked_number)
+        self.declare(Symbol("string"), builtins.to_ked_string)
 
 
 class CallStack:

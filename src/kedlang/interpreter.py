@@ -1,9 +1,10 @@
 import os
 import time
-from typing import Any
+from typing import Any, Union
 
 from . import ast, exception, lexer, parser, stack, visitor
 from .builtins import to_ked_boolean, to_ked_number, to_ked_string
+from .symbol import Symbol
 
 
 class KedInterpreter(visitor.KedASTVisitor):
@@ -36,31 +37,17 @@ class KedInterpreter(visitor.KedASTVisitor):
     def current_scope(self):
         return self.call_stack.peek()
 
-    # TODO move to Frame instance methods
-    def declare_identifier(self, name, value=None):
-        if name in self.current_scope:
-            raise SyntaxError("Identifier '" + name + "' has already been declared")
-        self.current_scope[name] = value
+    def resolve(self, target: Union[ast.KedAST, Symbol, Any]):
+        # Visit nodes before resolving
+        if isinstance(target, ast.KedAST):
+            target = self.visit(target)
 
-    def undeclare_identifier(self, name):
-        if name not in self.current_scope:
-            raise SyntaxError("Identifier '" + name + "' has not been declared")
-        del self.current_scope[name]
+        # Resolve symbols from the current stack frame
+        if isinstance(target, Symbol):
+            return self.current_scope.fetch(target)
 
-    def assign_to_identifier(self, name, value=None):
-        if name not in self.current_scope:
-            raise ReferenceError("'" + name + "' is not defined")
-        self.current_scope[name] = value
-
-    def resolve_identifier(self, name):
-        return self.current_scope[name]
-        while frame is not None:
-            # print("RESOLVE", name, frame.members)
-            if name in frame:
-                return frame[name]
-            frame = frame.parent
-
-        raise ReferenceError("'" + name + "' is not defined")
+        # Value types are returned as-is
+        return target
 
     def visit_Program(self, node: ast.Program) -> None:
         try:
@@ -70,19 +57,18 @@ class KedInterpreter(visitor.KedASTVisitor):
             pass
 
     def visit_Declare(self, node: ast.Declare) -> None:
-        variable = node.variable.value
-        initializer = self.visit(node.initializer)
-        if variable in self.current_scope:
-            raise f"Attempting to redeclare variable {variable}"
-        self.current_scope[variable] = initializer
+        symbol = self.visit(node.variable)
+        initializer = self.resolve(node.initializer)
+        self.current_scope.declare(symbol, initializer)
 
     def visit_Delete(self, node: ast.Delete) -> None:
-        variable = node.variable.value
-        self.undeclare_identifier(variable)
+        symbol = self.visit(node.variable)
+        self.current_scope.delete(symbol)
 
     def visit_Assign(self, node: ast.Assign) -> Any:
-        value = self.visit(node.expression)
-        self.assign_to_identifier(node.variable.value, value)
+        symbol = self.visit(node.variable)
+        value = self.resolve(node.expression)
+        self.current_scope.assign(symbol, value)
         return value
 
     def visit_Compound(self, node: ast.Compound) -> None:
@@ -117,7 +103,7 @@ class KedInterpreter(visitor.KedASTVisitor):
 
     def visit_Print(self, node: ast.Print) -> None:
         value = to_ked_string(self.visit(node.value))
-        print("PRINT:", value)
+        print(value)
 
     def visit_Import(self, node: ast.Import) -> None:
         import_path = os.path.join(self.cwd, self.visit(node.name))
@@ -135,8 +121,8 @@ class KedInterpreter(visitor.KedASTVisitor):
             self.pop_cwd()
 
     def visit_BinaryOp(self, node: ast.BinaryOp) -> None:
-        left = self.visit(node.left)
-        right = self.visit(node.right)
+        left = self.resolve(node.left)
+        right = self.resolve(node.right)
 
         # TODO should operators coerce types?
 
@@ -175,7 +161,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         raise TypeError("Unknown binary operator " + type(node.op).__name__)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
-        operand = self.visit(node.operand)
+        operand = self.resolve(node.operand)
 
         if isinstance(node.op, ast.UAdd):
             return +operand
@@ -190,14 +176,14 @@ class KedInterpreter(visitor.KedASTVisitor):
         pass
 
     def visit_Sleep(self, node: ast.Sleep) -> None:
-        time.sleep(self.visit(node.value))
+        time.sleep(self.resolve(node.value))
 
     def visit_Exit(self, node: ast.Exit) -> None:
         raise exception.Exit()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        func_name = node.name.value
-        func_params = [param.value for param in node.params]
+        func_name = self.visit(node.name)
+        func_params = [self.visit(param) for param in node.params]
         func_body = node.body
 
         def func_impl(*args):
@@ -205,37 +191,34 @@ class KedInterpreter(visitor.KedASTVisitor):
             # TODO match arity?
             # Add parameter symbols to stack frame
             for (param, arg) in zip(func_params, args):
-                frame[param] = arg
+                frame.declare(param, self.resolve(arg))
 
             # Execute function body
+            return_value = None
             try:
                 self.call_stack.push(frame)
                 self.visit(func_body)
             except exception.Return as ked_return:
                 return_value = ked_return.value
-            else:
-                return_value = None
             finally:
                 self.call_stack.pop()
             return return_value
 
-        self.declare_identifier(func_name, func_impl)
+        self.current_scope.declare(func_name, func_impl)
 
     def visit_Call(self, node: ast.Call) -> Any:
-        func = self.visit(node.func)
+        func = self.resolve(node.func)
         args = [self.visit(arg) for arg in node.args]
         return func(*args)
 
     def visit_IsDeclared(self, node: ast.IsDeclared) -> bool:
-        return node.variable.value in self.current_scope
+        return self.visit(node.variable) in self.current_scope
 
     def visit_Constant(self, node: ast.Constant) -> str:
         return node.token.value
 
     def visit_Name(self, node: ast.Name) -> None:
-        # TODO context
-        return self.resolve_identifier(node.token.value)
+        return Symbol(node.token.value)
 
     def visit_Variable(self, node: ast.Variable) -> None:
-        # TODO context
-        return self.resolve_identifier(node.token.value)
+        return Symbol(node.token.value)
