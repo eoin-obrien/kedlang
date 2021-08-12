@@ -29,6 +29,10 @@ class KedLexer(Lexer):
         TIMES,
         DIVIDE,
         MOD,
+        LT,
+        LTE,
+        GT,
+        GTE,
         EQ,
         STRICTEQ,
         CONCAT,
@@ -71,6 +75,12 @@ class KedLexer(Lexer):
     TIMES = r"times"
     DIVIDE = r"into"
     MOD = r"mod"
+
+    # Relational operators
+    LTE = r"isDoonshierThanOrIs"
+    LT = r"isDoonshierThan"
+    GTE = r"isLankierThanOrIs"
+    GT = r"isLankierThan"
 
     # Comparison operators
     STRICTEQ = r"isTheHeadOff|isTheAbsoluteHeadOff"

@@ -1,0 +1,55 @@
+saysI 'Numbers:' like
+
+saysI 1 isDoonshierThan 'a' like // gospel
+saysI 1 isDoonshierThan 1 like // bull
+saysI 'a' isDoonshierThan 1 like // bull
+
+saysI 1 isDoonshierThanOrIs 'a' like // gospel
+saysI 1 isDoonshierThanOrIs 1 like // gospel
+saysI 'a' isDoonshierThanOrIs 1 like // bull
+
+saysI 1 isLankierThan 'a' like // bull
+saysI 1 isLankierThan 1 like // bull
+saysI 'a' isLankierThan 1 like // gospel
+
+saysI 1 isLankierThanOrIs 'a' like // bull
+saysI 1 isLankierThanOrIs 1 like // gospel
+saysI 'a' isLankierThanOrIs 1 like // gospel
+
+saysI '' like
+saysI 'Strings:' like
+
+saysI 'a' isDoonshierThan 'b' like // gospel
+saysI 'a' isDoonshierThan 'a' like // bull
+saysI 'b' isDoonshierThan 'a' like // bull
+
+saysI 'a' isDoonshierThanOrIs 'b' like // gospel
+saysI 'a' isDoonshierThanOrIs 'a' like // gospel
+saysI 'b' isDoonshierThanOrIs 'a' like // bull
+
+saysI 'a' isLankierThan 'b' like // bull
+saysI 'a' isLankierThan 'a' like // bull
+saysI 'b' isLankierThan 'a' like // gospel
+
+saysI 'a' isLankierThanOrIs 'b' like // bull
+saysI 'a' isLankierThanOrIs 'a' like // gospel
+saysI 'b' isLankierThanOrIs 'a' like // gospel
+
+saysI '' like
+saysI 'Mixture of numbers and strings:' like
+
+saysI 1 isDoonshierThan 'a' like // gospel
+saysI 1 isDoonshierThan 1 like // bull
+saysI 'a' isDoonshierThan 1 like // bull
+
+saysI 1 isDoonshierThanOrIs 'a' like // gospel
+saysI 1 isDoonshierThanOrIs 1 like // gospel
+saysI 'a' isDoonshierThanOrIs 1 like // bull
+
+saysI 1 isLankierThan 'a' like // bull
+saysI 1 isLankierThan 1 like // bull
+saysI 'a' isLankierThan 1 like // gospel
+
+saysI 1 isLankierThanOrIs 'a' like // bull
+saysI 1 isLankierThanOrIs 1 like // gospel
+saysI 'a' isLankierThanOrIs 1 like // gospel

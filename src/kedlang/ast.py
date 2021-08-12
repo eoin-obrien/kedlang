@@ -73,6 +73,22 @@ class Concat(BinaryOperator):
     pass
 
 
+class Lt(BinaryOperator):
+    pass
+
+
+class LtE(BinaryOperator):
+    pass
+
+
+class Gt(BinaryOperator):
+    pass
+
+
+class GtE(BinaryOperator):
+    pass
+
+
 class Eq(BinaryOperator):
     pass
 

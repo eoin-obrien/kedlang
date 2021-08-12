@@ -25,6 +25,7 @@ class KedParser(Parser):
         ("left", OR),
         ("left", AND),
         ("left", EQ, STRICTEQ),
+        ("left", LT, LTE, GT, GTE),
         ("left", CONCAT),
         ("left", PLUS, MINUS),
         ("left", TIMES, DIVIDE, MOD),
@@ -174,23 +175,23 @@ class KedParser(Parser):
     def logical_and_expression(self, p: YaccProduction):
         return ast.BinaryOp(p[0], ast.And(), p[-1])
 
-    @_("concat_expression")
+    @_("relational_expression")
     def eq_expression(self, p: YaccProduction):
         return p[0]
 
-    @_("eq_expression EQ concat_expression")
+    @_("eq_expression EQ relational_expression")
     def eq_expression(self, p: YaccProduction):
         return ast.BinaryOp(p[0], ast.Eq(), p[-1])
 
-    @_("eq_expression STRICTEQ concat_expression")
+    @_("eq_expression STRICTEQ relational_expression")
     def eq_expression(self, p: YaccProduction):
         return ast.BinaryOp(p[0], ast.StrictEq(), p[-1])
 
-    @_("eq_expression eq_operator NOT concat_expression %prec EQ")
+    @_("eq_expression eq_operator NOT relational_expression %prec EQ")
     def eq_expression(self, p: YaccProduction):
         return ast.BinaryOp(p[0], ast.NotEq(), p[-1])
 
-    @_("eq_expression strict_eq_operator NOT concat_expression %prec STRICTEQ")
+    @_("eq_expression strict_eq_operator NOT relational_expression %prec STRICTEQ")
     def eq_expression(self, p: YaccProduction):
         return ast.BinaryOp(p[0], ast.NotStrictEq(), p[-1])
 
@@ -201,6 +202,26 @@ class KedParser(Parser):
     @_("STRICTEQ")
     def strict_eq_operator(self, p: YaccProduction):
         return p[0]
+
+    @_("concat_expression")
+    def relational_expression(self, p: YaccProduction):
+        return p[0]
+
+    @_("relational_expression LT concat_expression")
+    def relational_expression(self, p: YaccProduction):
+        return ast.BinaryOp(p[0], ast.Lt(), p[2])
+
+    @_("relational_expression GT concat_expression")
+    def relational_expression(self, p: YaccProduction):
+        return ast.BinaryOp(p[0], ast.Gt(), p[2])
+
+    @_("relational_expression LTE concat_expression")
+    def relational_expression(self, p: YaccProduction):
+        return ast.BinaryOp(p[0], ast.LtE(), p[2])
+
+    @_("relational_expression GTE concat_expression")
+    def relational_expression(self, p: YaccProduction):
+        return ast.BinaryOp(p[0], ast.GtE(), p[2])
 
     @_("additive_expression")
     def concat_expression(self, p: YaccProduction):

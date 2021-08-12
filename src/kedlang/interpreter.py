@@ -155,6 +155,19 @@ class KedInterpreter(visitor.KedASTVisitor):
         if op in logic_ops:
             return logic_ops[op](left, right)
 
+        relational_ops = {
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge,
+        }
+
+        if op in relational_ops:
+            if str in [type(left), type(right)]:
+                left = to_ked_string(left)
+                right = to_ked_string(right)
+            return relational_ops[op](left, right)
+
         raise TypeError("Unknown binary operator " + op.__name__)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
