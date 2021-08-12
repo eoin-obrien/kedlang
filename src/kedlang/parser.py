@@ -22,6 +22,7 @@ class KedParser(Parser):
         ("nonassoc", ELIF),
         ("nonassoc", ELSE),
         ("right", "="),
+        ("nonassoc", ARRAY),
         ("left", OR),
         ("left", AND),
         ("left", EQ, STRICTEQ),
@@ -299,11 +300,15 @@ class KedParser(Parser):
     def argument_list(self, p: YaccProduction):
         return [p.argument]
 
+    @_("SPREAD assignment_expression %prec UMINUS")
+    def argument(self, p: YaccProduction):
+        return ast.Spread(p.assignment_expression)
+
     @_("assignment_expression")
     def argument(self, p: YaccProduction):
         return p.assignment_expression
 
-    @_("identifier", "number", "string", "boolean", "null")
+    @_("identifier", "array", "number", "string", "boolean", "null")
     def primary_expression(self, p: YaccProduction):
         return p[0]
 
@@ -334,6 +339,14 @@ class KedParser(Parser):
     @_('"-"')
     def unary_operator(self, p: YaccProduction):
         return ast.USub()
+
+    @_('"[" "]" %prec ARRAY')
+    def array(self, p: YaccProduction):
+        return ast.List([])
+
+    @_('"[" argument_list "]" %prec ARRAY')
+    def array(self, p: YaccProduction):
+        return ast.List(p.argument_list)
 
     @_("STRING")
     def string(self, p: YaccProduction):

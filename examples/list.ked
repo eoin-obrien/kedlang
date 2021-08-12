@@ -1,0 +1,24 @@
+remember emptyList () {
+    return [] like
+}
+
+remember €empty = emptyList() like
+saysI €empty like
+
+remember €full = [1, 2, 3, bull, 'string', emptyList()] like
+saysI €full like
+
+remember €source = [1, 2, 3] like
+remember €destination = [...€source, €source] like
+saysI €destination like
+
+remember printList(€list) {
+    remember €i = 0 like
+    eraGoOnSure( €i isDoonshierThan len( €list )) {
+        saysI 'list[' em €i em '] = ' em €list[€i] like
+        €i = €i plus 1 like
+    }
+}
+
+printList(€source) like
+saysI €source[-1] like

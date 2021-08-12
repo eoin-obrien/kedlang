@@ -1,3 +1,4 @@
+import itertools
 import operator
 import os
 import time
@@ -5,7 +6,7 @@ from typing import Any, Union
 
 from . import ast, exception, lexer, parser, visitor
 from .builtins import to_ked_boolean, to_ked_number, to_ked_string
-from .callstack import CallStack, Frame, GlobalFrame
+from .callstack import CallStack, Frame
 from .cwdstack import CWDStack
 from .symbol import Symbol
 
@@ -24,7 +25,13 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         # Create global stack frame
         self.call_stack = CallStack()
-        self.call_stack.push(GlobalFrame(name="global"))
+        self.call_stack.push(Frame(name="global"))
+
+        # Init builtins
+        self.current_scope.declare(Symbol("boolean"), to_ked_boolean)
+        self.current_scope.declare(Symbol("number"), to_ked_number)
+        self.current_scope.declare(Symbol("string"), to_ked_string)
+        self.current_scope.declare(Symbol("len"), self.get_length)
 
     def interpret(self, ast: ast.KedAST) -> Any:
         return self.visit(ast)
@@ -37,6 +44,9 @@ class KedInterpreter(visitor.KedASTVisitor):
     def current_scope(self):
         return self.call_stack.peek()
 
+    def get_length(self, target: Union[ast.KedAST, Symbol, Any]):
+        return len(self.resolve(target))
+
     def resolve(self, target: Union[ast.KedAST, Symbol, Any]):
         # Visit nodes before resolving
         if isinstance(target, ast.KedAST):
@@ -48,6 +58,13 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         # Value types are returned as-is
         return target
+
+    def resolve_spread(self, target: Union[ast.KedAST, Symbol, Any]):
+        def resolve_element(element):
+            resolved = self.resolve(element)
+            return [*resolved] if isinstance(element, ast.Spread) else [resolved]
+
+        return list(itertools.chain(*map(resolve_element, target)))
 
     def visit_Program(self, node: ast.Program) -> None:
         try:
@@ -201,7 +218,7 @@ class KedInterpreter(visitor.KedASTVisitor):
             # TODO match arity? No, but add spread params
             # Add parameter symbols to stack frame
             for (param, arg) in zip(func_params, args):
-                frame.declare(param, self.resolve(arg))
+                frame.declare(param, arg)
 
             # Execute function body
             return_value = None
@@ -218,11 +235,26 @@ class KedInterpreter(visitor.KedASTVisitor):
 
     def visit_Call(self, node: ast.Call) -> Any:
         func = self.resolve(node.func)
-        args = [self.visit(arg) for arg in node.args]
+        args = [self.resolve(arg) for arg in node.args]
         return func(*args)
 
     def visit_IsDeclared(self, node: ast.IsDeclared) -> bool:
         return self.visit(node.variable) in self.current_scope
+
+    def visit_List(self, node: ast.List) -> list:
+        return self.resolve_spread(node.elements)
+
+    def visit_Subscript(self, node: ast.Subscript) -> Any:
+        value = self.resolve(node.value)
+
+        index = int(to_ked_number(self.resolve(node.index)))
+        if index < 0:
+            index = len(value) + index
+
+        return self.resolve(node.value)[index]
+
+    def visit_Spread(self, node: ast.Spread) -> list:
+        return self.resolve(node.value)
 
     def visit_Constant(self, node: ast.Constant) -> str:
         return node.token.value

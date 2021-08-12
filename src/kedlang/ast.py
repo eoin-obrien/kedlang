@@ -286,6 +286,22 @@ class IsDeclared(Expression):
         return f"<{self.__class__.__name__} {self.variable}>"
 
 
+class List(Expression):
+    def __init__(self, elements: List[Expression]) -> None:
+        self.elements = elements
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.elements}>"
+
+
+class Spread(Expression):
+    def __init__(self, value: Expression) -> None:
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.value}>"
+
+
 class Constant(Expression):
     def __init__(self, token: Token) -> None:
         self.token = token

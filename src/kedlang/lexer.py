@@ -11,6 +11,7 @@ class KedLexer(Lexer):
         STRING,
         NAME,
         VARIABLE,
+        SPREAD,
         IF,
         ELIF,
         ELSE,
@@ -48,62 +49,12 @@ class KedLexer(Lexer):
         EXIT,
     }
 
-    literals = {"(", ")", "{", "}", "=", "+", "-", ",", "!"}
+    literals = {"(", ")", "[", "]", "{", "}", "=", "+", "-", ".", ",", "!"}
 
     # String containing ignored characters
     ignore = " \t"
 
-    # Conditionals
-    IF = r"eh"
-    ELIF = r"orEh"
-    ELSE = r"orEvenJust"
-
-    # Loops
-    WHILE = r"eraGoOnSure"
-    BREAK = r"ahStop"
-    CONTINUE = r"ahGoOn"
-    RETURN = r"return"
-
-    # Boolean operators
-    NOT = r"not"
-    AND = r"an"
-    OR = r"or"
-
-    # Arithmetic operators
-    PLUS = r"plus"
-    MINUS = r"awayFrom"
-    TIMES = r"times"
-    DIVIDE = r"into"
-    MOD = r"mod"
-
-    # Relational operators
-    LTE = r"isDoonshierThanOrIs"
-    LT = r"isDoonshierThan"
-    GTE = r"isLankierThanOrIs"
-    GT = r"isLankierThan"
-
-    # Comparison operators
-    STRICTEQ = r"isTheHeadOff|isTheAbsoluteHeadOff"
-    EQ = r"is"
-
-    # Import keywords
-    IMPORT = r"hereLa"
-    STRICT_IMPORT = r"cmereToMeWilla"
-
-    # String operators
-    CONCAT = r"em"
-
-    # Variables
-    DECLARE = r"remember"
-    UNDECLARE = r"forget"
-    IS_DECLARED = r"jaKnow"
-
-    # Utilities
-    LIKE = r"like"
-    PRINT = r"saysI"
-    SLEEP = r"holdOn"
-    NOOP = r"iWillYa|yaTwoMinutesThereNow"
-    EXIT = r"stopTheLights"
+    SPREAD = r"\.\.\."
 
     # Constants
     @_(r"nattin")
@@ -121,6 +72,64 @@ class KedLexer(Lexer):
         t.value = False
         return t
 
+    # Identifiers
+    NAME = r"[a-zA-Z_][a-zA-Z0-9_]*"
+    VARIABLE = r"€[a-zA-Z_][a-zA-Z0-9_]*"
+
+    # Conditionals
+    NAME[r"eh"] = IF
+    NAME[r"orEh"] = ELIF
+    NAME[r"orEvenJust"] = ELSE
+
+    # Loops
+    NAME[r"eraGoOnSure"] = WHILE
+    NAME[r"ahStop"] = BREAK
+    NAME[r"ahGoOn"] = CONTINUE
+    NAME[r"return"] = RETURN
+
+    # Boolean operators
+    NAME[r"not"] = NOT
+    NAME[r"an"] = AND
+    NAME[r"or"] = OR
+
+    # Arithmetic operators
+    NAME[r"plus"] = PLUS
+    NAME[r"awayFrom"] = MINUS
+    NAME[r"times"] = TIMES
+    NAME[r"into"] = DIVIDE
+    NAME[r"mod"] = MOD
+
+    # Relational operators
+    NAME[r"isDoonshierThanOrIs"] = LTE
+    NAME[r"isDoonshierThan"] = LT
+    NAME[r"isLankierThanOrIs"] = GTE
+    NAME[r"isLankierThan"] = GT
+
+    # Comparison operators
+    NAME[r"isTheHeadOff"] = STRICTEQ
+    NAME[r"isTheAbsoluteHeadOff"] = STRICTEQ
+    NAME[r"is"] = EQ
+
+    # Import keywords
+    NAME[r"hereLa"] = IMPORT
+    NAME[r"cmereToMeWilla"] = STRICT_IMPORT
+
+    # String operators
+    NAME[r"em"] = CONCAT
+
+    # Variables
+    NAME[r"remember"] = DECLARE
+    NAME[r"forget"] = UNDECLARE
+    NAME[r"jaKnow"] = IS_DECLARED
+
+    # Utilities
+    NAME[r"like"] = LIKE
+    NAME[r"saysI"] = PRINT
+    NAME[r"holdOn"] = SLEEP
+    NAME[r"iWillYa"] = NOOP
+    NAME[r"yaTwoMinutesThereNow"] = NOOP
+    NAME[r"stopTheLights"] = EXIT
+
     @_(r"'.*?'")
     @_(r'".*?"')
     def STRING(self, t: Token) -> Token:
@@ -133,10 +142,6 @@ class KedLexer(Lexer):
     def NUMBER(self, t: Token) -> Token:
         t.value = float(t.value)
         return t
-
-    # Identifiers
-    NAME = r"[a-zA-Z_][a-zA-Z0-9_]*"
-    VARIABLE = r"€[a-zA-Z_][a-zA-Z0-9_]*"
 
     ignore_comment = r"//.*"
 

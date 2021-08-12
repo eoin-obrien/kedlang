@@ -1,10 +1,7 @@
-import enum
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Optional, Union
 
 from kedlang.exception import SemanticError
 from kedlang.symbol import Symbol
-
-from . import builtins
 
 
 class Frame:
@@ -50,16 +47,6 @@ class Frame:
             self.__parent.delete(key)
         else:
             raise SemanticError(f"Symbol {key} does not exist in scope {self}")
-
-
-class GlobalFrame(Frame):
-    def __init__(self, name: str) -> None:
-        super().__init__(name, parent=None)
-
-        # Init global frame with builtins
-        self.declare(Symbol("boolean"), builtins.to_ked_boolean)
-        self.declare(Symbol("number"), builtins.to_ked_number)
-        self.declare(Symbol("string"), builtins.to_ked_string)
 
 
 class CallStack:

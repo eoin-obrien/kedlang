@@ -1,4 +1,7 @@
 def to_ked_string(value="") -> str:
+    if isinstance(value, list):
+        return [to_ked_string(element) for element in value]
+
     if value is None:
         return "nuttin"
     elif isinstance(value, bool):
