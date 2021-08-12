@@ -70,7 +70,6 @@ def main(args):
     """
     args = parse_args(args)
     setup_logging(args.loglevel)
-    _logger.debug("Starting crazy calculations...")
     lexer = KedLexer()
     parser = KedParser()
     interpreter = KedInterpreter(lexer, parser)
@@ -78,8 +77,8 @@ def main(args):
         code = f.read()
     tokens = lexer.tokenize(code)
     ast = parser.parse(tokens)
+    _logger.debug('Parsed AST: %s', ast)
     interpreter.interpret(ast)
-    _logger.info("Script ends here")
 
 
 def run():

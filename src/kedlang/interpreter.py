@@ -188,7 +188,7 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         def func_impl(*args):
             frame = stack.Frame(func_name, parent=self.current_scope)
-            # TODO match arity?
+            # TODO match arity? No, but add spread params
             # Add parameter symbols to stack frame
             for (param, arg) in zip(func_params, args):
                 frame.declare(param, self.resolve(arg))

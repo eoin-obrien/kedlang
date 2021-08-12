@@ -126,8 +126,6 @@ class KedParser(Parser):
     def iteration_statement(self, p: YaccProduction):
         return ast.While(p.expression, [p.statement])
 
-    # TODO return {<expression>}? ;
-
     @_("CONTINUE LIKE")
     def jump_statement(self, p: YaccProduction):
         return ast.Continue()
@@ -155,10 +153,6 @@ class KedParser(Parser):
     @_("STRICT_IMPORT expression LIKE")
     def import_statement(self, p: YaccProduction):
         return ast.Import(p.expression, is_strict=True)
-
-    # @_("conditional_expression")
-    # def constant_expression(self, p: YaccProduction):
-    #     return None  # TODO
 
     @_("logical_or_expression")
     def conditional_expression(self, p: YaccProduction):
@@ -248,10 +242,6 @@ class KedParser(Parser):
     def cast_expression(self, p: YaccProduction):
         return p[0]
 
-    # @_('"(" type_name ")" cast_expression')
-    # def cast_expression(self, p: YaccProduction):
-    #     return ast.Cast(p.type_name, p.cast_expression)
-
     @_("postfix_expression %prec UMINUS")
     def unary_expression(self, p: YaccProduction):
         return p[0]
@@ -304,10 +294,6 @@ class KedParser(Parser):
     def expression(self, p: YaccProduction):
         return p[0]
 
-    # @_('expression "," assignment_expression')
-    # def expression(self, p: YaccProduction):
-    #     return ast.BinaryOp(p[1], p[0], p[2])
-
     @_("conditional_expression")
     def assignment_expression(self, p: YaccProduction):
         return p[0]
@@ -315,10 +301,6 @@ class KedParser(Parser):
     @_('variable "=" assignment_expression')
     def assignment_expression(self, p: YaccProduction):
         return ast.Assign(p.variable, p.assignment_expression)
-
-    # @_('"="')
-    # def assignment_operator(self, p: YaccProduction):
-    #     return None
 
     @_("NOT", '"!"')
     def unary_operator(self, p: YaccProduction):
@@ -331,10 +313,6 @@ class KedParser(Parser):
     @_('"-"')
     def unary_operator(self, p: YaccProduction):
         return ast.USub()
-
-    # @_("STRING_TYPE", "NUMBER_TYPE", "BOOLEAN_TYPE")
-    # def type_name(self, p: YaccProduction):
-    #     return ast.Type(p[0])
 
     @_("STRING")
     def string(self, p: YaccProduction):

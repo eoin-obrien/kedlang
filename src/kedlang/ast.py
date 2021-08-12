@@ -126,7 +126,6 @@ class Declare(Statement):
 
 
 class FunctionDef(Statement):
-    # TODO returns
     def __init__(self, name: Name, params: List[Variable], body: Statement) -> None:
         self.name, self.params, self.body = name, params, body
 
