@@ -55,6 +55,8 @@ class KedLexer(Lexer):
         IMPORT,
         STRICT_IMPORT,
         EXIT,
+        CLASS,
+        EXTENDS,
     }
 
     literals = {"(", ")", "[", "]", "{", "}", "=", "+", "-", ".", ",", "!"}
@@ -83,6 +85,14 @@ class KedLexer(Lexer):
     # Identifiers
     NAME = r"[a-zA-Z_][a-zA-Z0-9_]*"
     VARIABLE = r"€[a-zA-Z_][a-zA-Z0-9_]*"
+
+    # Classes
+    NAME[r"class"] = CLASS
+    NAME[r"isTheBulbOff"] = EXTENDS
+    # TODO
+    # NAME[r"youKnowYourDa"] = SUPER
+    # NAME[r"youKnowYourMa"] = SUPER
+    # NAME[r"youKnowYourself"] = THIS
 
     # Conditionals
     NAME[r"eh"] = IF

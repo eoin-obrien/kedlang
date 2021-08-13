@@ -39,16 +39,48 @@ class KedParser(Parser):
         return ast.Program(p.statements)
 
     @_("DECLARE variable LIKE")
-    def declaration(self, p: YaccProduction):
+    def variable_declaration(self, p: YaccProduction):
         return ast.Declare(p.variable)
 
     @_('DECLARE variable "=" assignment_expression LIKE')
-    def declaration(self, p: YaccProduction):
+    def variable_declaration(self, p: YaccProduction):
         return ast.Declare(p.variable, p.assignment_expression)
 
     @_('DECLARE name "(" spread_parameter_list ")" statement')
-    def declaration(self, p: YaccProduction):
+    def function_declaration(self, p: YaccProduction):
         return ast.FunctionDef(p.name, p.spread_parameter_list, p.statement)
+
+    @_("CLASS name class_body")
+    def class_declaration(self, p: YaccProduction):
+        return ast.ClassDef(p.name, None, p.class_body)
+
+    @_("CLASS name superclass class_body")
+    def class_declaration(self, p: YaccProduction):
+        return ast.ClassDef(p.name, p.superclass, p.class_body)
+
+    @_("EXTENDS name")
+    def superclass(self, p: YaccProduction):
+        return p.name
+
+    @_('"{" "}"')
+    def class_body(self, p: YaccProduction):
+        return []
+
+    @_('"{" class_body_declarations "}"')
+    def class_body(self, p: YaccProduction):
+        return p.class_body_declarations
+
+    @_("class_body_declaration")
+    def class_body_declarations(self, p: YaccProduction):
+        return [p.class_body_declaration]
+
+    @_("class_body_declarations class_body_declaration")
+    def class_body_declarations(self, p: YaccProduction):
+        return [*p.class_body_declarations, p.class_body_declaration]
+
+    @_("variable_declaration", "function_declaration")
+    def class_body_declaration(self, p: YaccProduction):
+        return p[0]
 
     @_("UNDECLARE variable LIKE")
     def undeclaration(self, p: YaccProduction):
@@ -99,8 +131,10 @@ class KedParser(Parser):
         return [*p.statements, p.statement]
 
     @_(
-        "declaration",
+        "variable_declaration",
+        "function_declaration",
         "undeclaration",
+        "class_declaration",
         "expression_statement",
         "compound_statement",
         "if_statement",

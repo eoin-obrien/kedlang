@@ -67,6 +67,10 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         return list(itertools.chain(*map(resolve_element, target)))
 
+    # TODO classes
+    # TODO attributes
+    # TODO exceptions
+
     def visit_Program(self, node: ast.Program) -> None:
         try:
             for statement in node.statements:
