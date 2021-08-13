@@ -423,3 +423,6 @@ class KedParser(Parser):
     @_("VARIABLE")
     def variable(self, p: YaccProduction):
         return ast.Variable(get_token(p))
+
+    def error(self, p: YaccProduction):
+        raise SyntaxError(f"invalid syntax on line {p.lineno} at token '{p.type}'")

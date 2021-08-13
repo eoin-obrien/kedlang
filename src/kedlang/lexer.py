@@ -2,6 +2,14 @@ from sly import Lexer
 from sly.lex import Token
 
 
+def find_column(text: str, token: Token):
+    last_cr = text.rfind("\n", 0, token.index)
+    if last_cr < 0:
+        last_cr = 0
+    column = (token.index - last_cr) + 1
+    return column
+
+
 class KedLexer(Lexer):
     # pyright: reportUndefinedVariable=false
 
@@ -150,6 +158,7 @@ class KedLexer(Lexer):
     def ignore_newline(self, t):
         self.lineno += t.value.count("\n")
 
-    def error(self, t):
+    def error(self, t: Token):
         print("Line %d: Bad character %r" % (self.lineno, t.value[0]))
         self.index += 1
+        return t
