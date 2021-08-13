@@ -20,5 +20,11 @@ remember printList(€list) {
     }
 }
 
+remember printSpreadList(...€list) {
+    printList(€list) like
+}
+
 printList(€source) like
+printSpreadList(...€source) like
+printSpreadList(1, 2, 3) like
 saysI €source[-1] like

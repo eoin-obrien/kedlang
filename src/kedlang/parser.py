@@ -46,28 +46,44 @@ class KedParser(Parser):
     def declaration(self, p: YaccProduction):
         return ast.Declare(p.variable, p.assignment_expression)
 
-    @_('DECLARE name "(" ")" statement')
+    @_('DECLARE name "(" spread_parameter_list ")" statement')
     def declaration(self, p: YaccProduction):
-        return ast.FunctionDef(p.name, [], p.statement)
-
-    @_('DECLARE name "(" parameter_list ")" statement')
-    def declaration(self, p: YaccProduction):
-        return ast.FunctionDef(p.name, p.parameter_list, p.statement)
+        return ast.FunctionDef(p.name, p.spread_parameter_list, p.statement)
 
     @_("UNDECLARE variable LIKE")
     def undeclaration(self, p: YaccProduction):
         return ast.Delete(p.variable)
 
-    @_('parameter_list "," parameter_declaration')
-    def parameter_list(self, p: YaccProduction):
-        return [*p.parameter_list, p.parameter_declaration]
+    @_('parameter_list "," spread_parameter')
+    def spread_parameter_list(self, p: YaccProduction):
+        return [*p.parameter_list, p.spread_parameter]
 
-    @_("parameter_declaration")
+    @_("spread_parameter")
+    def spread_parameter_list(self, p: YaccProduction):
+        return [p.spread_parameter]
+
+    @_("parameter_list")
+    def spread_parameter_list(self, p: YaccProduction):
+        return p.parameter_list
+
+    @_("")
+    def spread_parameter_list(self, p: YaccProduction):
+        return []
+
+    @_('parameter_list "," parameter')
     def parameter_list(self, p: YaccProduction):
-        return [p.parameter_declaration]
+        return [*p.parameter_list, p.parameter]
+
+    @_("parameter")
+    def parameter_list(self, p: YaccProduction):
+        return [p.parameter]
+
+    @_("SPREAD variable")
+    def spread_parameter(self, p: YaccProduction):
+        return ast.Spread(p.variable)
 
     @_("variable")
-    def parameter_declaration(self, p: YaccProduction):
+    def parameter(self, p: YaccProduction):
         return p.variable
 
     @_('"{" statements "}"')
@@ -300,12 +316,28 @@ class KedParser(Parser):
     def argument_list(self, p: YaccProduction):
         return [p.argument]
 
-    @_("SPREAD assignment_expression %prec UMINUS")
+    @_("SPREAD assignment_expression")
     def argument(self, p: YaccProduction):
         return ast.Spread(p.assignment_expression)
 
     @_("assignment_expression")
     def argument(self, p: YaccProduction):
+        return p.assignment_expression
+
+    @_('element_list "," element')
+    def element_list(self, p: YaccProduction):
+        return [*p.element_list, p.element]
+
+    @_("element")
+    def element_list(self, p: YaccProduction):
+        return [p.element]
+
+    @_("SPREAD assignment_expression")
+    def element(self, p: YaccProduction):
+        return ast.Spread(p.assignment_expression)
+
+    @_("assignment_expression")
+    def element(self, p: YaccProduction):
         return p.assignment_expression
 
     @_("identifier", "array", "number", "string", "boolean", "null")
@@ -344,9 +376,9 @@ class KedParser(Parser):
     def array(self, p: YaccProduction):
         return ast.List([])
 
-    @_('"[" argument_list "]" %prec ARRAY')
+    @_('"[" element_list "]" %prec ARRAY')
     def array(self, p: YaccProduction):
-        return ast.List(p.argument_list)
+        return ast.List(p.element_list)
 
     @_("STRING")
     def string(self, p: YaccProduction):

@@ -1,4 +1,5 @@
 import itertools
+import math
 import operator
 import os
 import time
@@ -209,33 +210,38 @@ class KedInterpreter(visitor.KedASTVisitor):
         raise exception.Exit()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        func_name = self.visit(node.name)
-        func_params = [self.visit(param) for param in node.params]
-        func_body = node.body
+        name = self.visit(node.name)
+        params = list(map(self.visit, node.params))
+        rest_param = self.visit(node.rest_param)
+        body = node.body
 
         def func_impl(*args):
-            frame = Frame(func_name, parent=self.current_scope)
-            # TODO match arity? No, but add spread params
-            # Add parameter symbols to stack frame
-            for (param, arg) in zip(func_params, args):
+            # Pad args to match function arity
+            args = list(args) + [None] * min(0, len(params) - len(args))
+
+            # Add param symbols to stack frame
+            frame = Frame(name, parent=self.current_scope)
+            for (param, arg) in zip(params, args):
                 frame.declare(param, arg)
+            if rest_param is not None:
+                frame.declare(rest_param, args[len(params) :])
 
             # Execute function body
             return_value = None
             try:
                 self.call_stack.push(frame)
-                self.visit(func_body)
+                self.visit(body)
             except exception.Return as ked_return:
                 return_value = ked_return.value
             finally:
                 self.call_stack.pop()
             return return_value
 
-        self.current_scope.declare(func_name, func_impl)
+        self.current_scope.declare(name, func_impl)
 
     def visit_Call(self, node: ast.Call) -> Any:
         func = self.resolve(node.func)
-        args = [self.resolve(arg) for arg in node.args]
+        args = self.resolve_spread(node.args)
         return func(*args)
 
     def visit_IsDeclared(self, node: ast.IsDeclared) -> bool:
@@ -246,12 +252,8 @@ class KedInterpreter(visitor.KedASTVisitor):
 
     def visit_Subscript(self, node: ast.Subscript) -> Any:
         value = self.resolve(node.value)
-
         index = int(to_ked_number(self.resolve(node.index)))
-        if index < 0:
-            index = len(value) + index
-
-        return self.resolve(node.value)[index]
+        return value[index]
 
     def visit_Spread(self, node: ast.Spread) -> list:
         return self.resolve(node.value)

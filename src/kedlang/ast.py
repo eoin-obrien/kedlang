@@ -143,10 +143,25 @@ class Declare(Statement):
 
 class FunctionDef(Statement):
     def __init__(self, name: Name, params: List[Variable], body: Statement) -> None:
-        self.name, self.params, self.body = name, params, body
+        self.name, self.__params, self.body = name, params, body
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {self.name} {self.params} {self.body}>"
+        return f"<{self.__class__.__name__} {self.name} {self.__params} {self.body}>"
+
+    @property
+    def params(self) -> List[Variable]:
+        if self.rest_param is None:
+            return self.__params
+        else:
+            return self.__params[:-1]
+
+    @property
+    def rest_param(self) -> Optional[Variable]:
+        if len(self.__params) == 0:
+            return None
+        if not isinstance(self.__params[-1], Spread):
+            return None
+        return self.__params[-1].value
 
 
 class Delete(Statement):
