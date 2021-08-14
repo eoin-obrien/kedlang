@@ -122,7 +122,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         raise exception.Break()
 
     def visit_Return(self, node: ast.Return) -> None:
-        raise exception.Return(self.visit(node.value))
+        raise exception.Return(self.resolve(node.value))
 
     def visit_Print(self, node: ast.Print) -> None:
         value = to_ked_string(self.resolve(node.value))
@@ -220,12 +220,15 @@ class KedInterpreter(visitor.KedASTVisitor):
         rest_param = self.visit(node.rest_param)
         body = node.body
 
+        # Functions bind the scope they're defined in, not the one they're called in
+        bound_scope = self.current_scope
+
         def func_impl(*args):
             # Pad args to match function arity
             args = list(args) + [None] * min(0, len(params) - len(args))
 
             # Add param symbols to stack frame
-            frame = Frame(name, parent=self.current_scope)
+            frame = Frame(name, parent=bound_scope)
             for (param, arg) in zip(params, args):
                 frame.declare(param, arg)
             if rest_param is not None:
@@ -268,7 +271,6 @@ class KedInterpreter(visitor.KedASTVisitor):
         class_type = self.resolve(node.class_type)
         # TODO pass args to constructor
         args = self.resolve_spread(node.args)
-        print(class_type, args)
         # TODO check class_type is actually a class
 
         return self._construct_class_instance(class_type)

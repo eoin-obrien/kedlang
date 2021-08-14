@@ -8,6 +8,9 @@ class Symbol:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name}>"
 
+    def __str__(self) -> str:
+        return self.name
+
     def __eq__(self, o: object) -> bool:
         return self.name == o.name
 

@@ -1,0 +1,13 @@
+remember €boundVar = 'something' like
+
+remember x() {
+    remember €boundVar = 42 like
+    remember y() {
+        return €boundVar like
+    }
+    return y like
+}
+
+saysI €boundVar like // something
+saysI x() like // [Function y]
+saysI x()() like // 42

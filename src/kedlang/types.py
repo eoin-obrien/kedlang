@@ -28,6 +28,9 @@ class KedFunction:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.impl.__name__}>"
 
+    def __str__(self) -> str:
+        return f"[Function {self.impl.__name__}]"
+
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.impl(args, kwds)
 
@@ -35,6 +38,12 @@ class KedFunction:
 class KedClass:
     def __init__(self, name, base, body) -> None:
         self.name, self.base, self.body = name, base, body
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.impl.name}>"
+
+    def __str__(self) -> str:
+        return f"[Class {self.name}]"
 
 
 class KedObject:

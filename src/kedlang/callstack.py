@@ -1,3 +1,4 @@
+import functools
 from typing import Any, Optional, Union
 
 from kedlang.exception import SemanticError
@@ -5,6 +6,7 @@ from kedlang.symbol import Symbol
 
 
 def check_key(func):
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         key = args[1]
         if not isinstance(key, Symbol):
@@ -56,10 +58,6 @@ class Frame:
             self.__parent.delete(key)
         else:
             raise SemanticError(f"Symbol {key} does not exist in scope {self}")
-
-    def __keycheck(self, key: Any):
-        if not isinstance(key, Symbol):
-            raise TypeError(f"Frame keys must be of type 'Symbol', got '{type(key)}'")
 
 
 class CallStack:
