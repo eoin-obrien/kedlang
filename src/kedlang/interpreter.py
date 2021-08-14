@@ -273,7 +273,14 @@ class KedInterpreter(visitor.KedASTVisitor):
         args = self.resolve_spread(node.args)
         # TODO check class_type is actually a class
 
-        return self.__construct_class_instance(class_type)
+        instance = self.__construct_class_instance(class_type)
+
+        # Invoke constructor if one exists in the inheritance hierarchy
+        constructor = self.current_scope.fetch(instance["constructor"])
+        if callable(constructor):
+            constructor(*args)
+
+        return instance
 
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         value = self.resolve(node.value)
@@ -302,7 +309,7 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_Variable(self, node: ast.Variable) -> None:
         return Symbol(node.token.value)
 
-    def __bind_instance_method(self, func, instance, base_instance) -> KedFunction:
+    def __bind_instance_method(self, func, instance) -> KedFunction:
         def bound_func(*args):
             bound_frame = Frame(instance.name, parent=self.current_scope)
             self.call_stack.push(bound_frame)
@@ -338,7 +345,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         # Inherit attributes from base class instance
         for key, value in frame._members.items():
             if isinstance(value, KedFunction):
-                value = self.__bind_instance_method(value, instance, base_instance)
+                value = self.__bind_instance_method(value, instance)
             symbol = NamespacedSymbol(key.name, instance)
             instance[key.name] = symbol
             self.current_scope.declare(symbol, value)

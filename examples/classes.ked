@@ -3,12 +3,23 @@ remember €pi = 3.14159 like
 class Shape {
     remember €x = 0 like
     remember €y = 0 like
+
+    remember constructor() {
+        saysI 'Shape.constructor' like
+    }
+
     remember area() {}
     remember perimeter() {}
 }
 
 class Circle isTheBulbOff Shape {
-    remember €radius = 0 like
+    remember €radius like
+
+    remember constructor() {
+        youKnowYourDa.constructor() like
+        €radius = 0 like
+        saysI 'Circle.constructor' like
+    }
 
     remember getRadius() {
         return youKnowYourself.€radius like
