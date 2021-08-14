@@ -273,7 +273,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         args = self.resolve_spread(node.args)
         # TODO check class_type is actually a class
 
-        return self._construct_class_instance(class_type)
+        return self.__construct_class_instance(class_type)
 
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         value = self.resolve(node.value)
@@ -302,12 +302,9 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_Variable(self, node: ast.Variable) -> None:
         return Symbol(node.token.value)
 
-    def _bind_instance_method(self, func, instance, base_instance) -> KedFunction:
+    def __bind_instance_method(self, func, instance, base_instance) -> KedFunction:
         def bound_func(*args):
             bound_frame = Frame(instance.name, parent=self.current_scope)
-            bound_frame.declare(Symbol("youKnowYourself"), instance)
-            bound_frame.declare(Symbol("youKnowYourDa"), base_instance)
-            bound_frame.declare(Symbol("youKnowYourMa"), base_instance)
             self.call_stack.push(bound_frame)
             return_value = func(*args)
             self.call_stack.pop()
@@ -315,21 +312,25 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         return KedFunction(bound_func)
 
-    def _construct_class_instance(self, class_type: KedClass):
+    def __construct_class_instance(self, class_type: KedClass):
         if class_type.base is not None:
-            base_instance = self._construct_class_instance(class_type.base)
+            base_instance = self.__construct_class_instance(class_type.base)
         else:
             base_instance = None
 
+        instance = Namespace()
+
         # Execute class body to create attributes
         frame = Frame(class_type.name, parent=self.current_scope)
+        frame.declare(Symbol("youKnowYourself"), instance)
+        frame.declare(Symbol("youKnowYourDa"), base_instance)
+        frame.declare(Symbol("youKnowYourMa"), base_instance)
         self.call_stack.push(frame)
         for stmt in class_type.body:
             self.visit(stmt)
         self.call_stack.pop()
 
         # Inherit attributes from base class instance
-        instance = Namespace()
         if base_instance is not None:
             for key, value in base_instance.members.items():
                 instance[key] = value
@@ -337,7 +338,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         # Inherit attributes from base class instance
         for key, value in frame._members.items():
             if isinstance(value, KedFunction):
-                value = self._bind_instance_method(value, instance, base_instance)
+                value = self.__bind_instance_method(value, instance, base_instance)
             symbol = NamespacedSymbol(key.name, instance)
             instance[key.name] = symbol
             self.current_scope.declare(symbol, value)
