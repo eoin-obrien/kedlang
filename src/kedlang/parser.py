@@ -13,7 +13,7 @@ class KedParser(Parser):
 
     # Get the token list from the lexer (required)
     tokens = lexer.KedLexer.tokens
-    debugfile = "parser.out"
+    # debugfile = "parser.out"
 
     # pyright: reportUndefinedVariable=false
 
