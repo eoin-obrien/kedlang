@@ -164,6 +164,14 @@ class FunctionDef(Statement):
         return self.__params[-1].value
 
 
+class ClassDef(Statement):
+    def __init__(self, name: Name, base: Name, body: Statement) -> None:
+        self.name, self.base, self.body = name, base, body
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.name} {self.base} {self.body}>"
+
+
 class Delete(Statement):
     def __init__(self, variable: Variable) -> None:
         self.variable = variable
@@ -291,6 +299,14 @@ class Call(Expression):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.func} {self.args}>"
+
+
+class Constructor(Expression):
+    def __init__(self, class_type: Expression, args: List[Expression]) -> None:
+        self.class_type, self.args = class_type, args
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.class_type} {self.args}>"
 
 
 class IsDeclared(Expression):

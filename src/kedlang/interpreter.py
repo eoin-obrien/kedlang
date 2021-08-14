@@ -9,7 +9,8 @@ from . import ast, exception, lexer, parser, visitor
 from .builtins import to_ked_boolean, to_ked_number, to_ked_string
 from .callstack import CallStack, Frame
 from .cwdstack import CWDStack
-from .symbol import Symbol
+from .symbol import Namespace, NamespacedSymbol, Symbol
+from .types import KedClass, KedFunction, KedObject
 
 
 class KedInterpreter(visitor.KedASTVisitor):
@@ -241,12 +242,40 @@ class KedInterpreter(visitor.KedASTVisitor):
                 self.call_stack.pop()
             return return_value
 
-        self.current_scope.declare(name, func_impl)
+        func_impl.__name__ = str(name)
+
+        self.current_scope.declare(name, KedFunction(func_impl))
 
     def visit_Call(self, node: ast.Call) -> Any:
         func = self.resolve(node.func)
         args = self.resolve_spread(node.args)
+        # TODO check func is function
         return func(*args)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        name = self.visit(node.name)
+        base = self.resolve(node.base)
+
+        class_body = [stmt for stmt in node.body]
+        if base is not None:
+            class_body = [stmt for stmt in base.body] + class_body
+
+        impl = KedClass(name, base, node.body)
+
+        self.current_scope.declare(name, impl)
+
+    def visit_Constructor(self, node: ast.Constructor) -> Namespace:
+        class_type = self.resolve(node.class_type)
+        # TODO pass args to constructor
+        args = self.resolve_spread(node.args)
+        print(class_type, args)
+        # TODO check class_type is actually a class
+
+        return self._construct_class_instance(class_type)
+
+    def visit_Attribute(self, node: ast.Attribute) -> Any:
+        value = self.resolve(node.value)
+        return value[node.attr]
 
     def visit_IsDeclared(self, node: ast.IsDeclared) -> bool:
         return self.visit(node.variable) in self.current_scope
@@ -270,3 +299,45 @@ class KedInterpreter(visitor.KedASTVisitor):
 
     def visit_Variable(self, node: ast.Variable) -> None:
         return Symbol(node.token.value)
+
+    def _bind_instance_method(self, func, instance, base_instance) -> KedFunction:
+        def bound_func(*args):
+            bound_frame = Frame(instance.name, parent=self.current_scope)
+            bound_frame.declare(Symbol("youKnowYourself"), instance)
+            bound_frame.declare(Symbol("youKnowYourDa"), base_instance)
+            bound_frame.declare(Symbol("youKnowYourMa"), base_instance)
+            self.call_stack.push(bound_frame)
+            return_value = func(*args)
+            self.call_stack.pop()
+            return return_value
+
+        return KedFunction(bound_func)
+
+    def _construct_class_instance(self, class_type: KedClass):
+        if class_type.base is not None:
+            base_instance = self._construct_class_instance(class_type.base)
+        else:
+            base_instance = None
+
+        # Execute class body to create attributes
+        frame = Frame(class_type.name, parent=self.current_scope)
+        self.call_stack.push(frame)
+        for stmt in class_type.body:
+            self.visit(stmt)
+        self.call_stack.pop()
+
+        # Inherit attributes from base class instance
+        instance = Namespace()
+        if base_instance is not None:
+            for key, value in base_instance.members.items():
+                instance[key] = value
+
+        # Inherit attributes from base class instance
+        for key, value in frame._members.items():
+            if isinstance(value, KedFunction):
+                value = self._bind_instance_method(value, instance, base_instance)
+            symbol = NamespacedSymbol(key.name, instance)
+            instance[key.name] = symbol
+            self.current_scope.declare(symbol, value)
+
+        return instance

@@ -57,6 +57,7 @@ class KedLexer(Lexer):
         EXIT,
         CLASS,
         EXTENDS,
+        NEW,
     }
 
     literals = {"(", ")", "[", "]", "{", "}", "=", "+", "-", ".", ",", "!"}
@@ -87,6 +88,7 @@ class KedLexer(Lexer):
     VARIABLE = r"€[a-zA-Z_][a-zA-Z0-9_]*"
 
     # Classes
+    NAME[r"new"] = NEW
     NAME[r"class"] = CLASS
     NAME[r"isTheBulbOff"] = EXTENDS
     # TODO

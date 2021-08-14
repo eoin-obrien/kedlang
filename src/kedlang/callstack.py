@@ -4,6 +4,15 @@ from kedlang.exception import SemanticError
 from kedlang.symbol import Symbol
 
 
+def check_key(func):
+    def wrapper(*args, **kwargs):
+        key = args[1]
+        if not isinstance(key, Symbol):
+            raise TypeError(f"Frame keys must be of type 'Symbol', got '{type(key)}'")
+        return func(*args, **kwargs)
+    return wrapper
+
+
 class Frame:
     def __init__(self, name: str, parent: Optional["Frame"] = None) -> None:
         self.__name = name
@@ -13,16 +22,16 @@ class Frame:
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.__name}>"
 
+    @check_key
     def declare(self, key: Union[Symbol, str], value=None) -> None:
-        key = str(key)
         if key in self._members:
             raise SemanticError(
                 f"Symbol {key} has already been declared in scope {self}"
             )
         self._members[key] = value
 
+    @check_key
     def fetch(self, key: Union[Symbol, str]) -> Any:
-        key = str(key)
         if key in self._members:
             return self._members[key]
         elif self.__parent is not None:
@@ -30,8 +39,8 @@ class Frame:
         else:
             raise SemanticError(f"Symbol {key} does not exist in scope {self}")
 
+    @check_key
     def assign(self, key: Union[Symbol, str], value: Any) -> None:
-        key = str(key)
         if key in self._members:
             self._members[key] = value
         elif self.__parent is not None:
@@ -39,14 +48,18 @@ class Frame:
         else:
             raise SemanticError(f"Symbol {key} does not exist in scope {self}")
 
+    @check_key
     def delete(self, key: Union[Symbol, str]) -> None:
-        key = str(key)
         if key in self._members:
             del self._members[key]
         elif self.__parent is not None:
             self.__parent.delete(key)
         else:
             raise SemanticError(f"Symbol {key} does not exist in scope {self}")
+
+    def __keycheck(self, key: Any):
+        if not isinstance(key, Symbol):
+            raise TypeError(f"Frame keys must be of type 'Symbol', got '{type(key)}'")
 
 
 class CallStack:

@@ -1,0 +1,40 @@
+remember €pi = 3.14159 like
+
+class Shape {
+    remember €x = 0 like
+    remember €y = 0 like
+    remember area() {}
+    remember perimeter() {}
+}
+
+class Circle isTheBulbOff Shape {
+    remember €radius = 0 like
+
+    remember getRadius() {
+        return youKnowYourself.€radius like
+    }
+
+    remember area() {
+        return €pi times youKnowYourself.getRadius() times youKnowYourself.getRadius() like
+    }
+
+    remember perimeter() {
+        return 2 times €pi times youKnowYourself.€radius like
+    }
+
+    remember inheritedArea() {
+        return youKnowYourDa.area() like
+    }
+
+    remember inheritedPerimeter() {
+        return youKnowYourMa.area() like
+    }
+}
+
+remember €radius = 10 like
+remember €circle = new Circle() like
+remember €otherCircle = new Circle() like
+€circle.€radius = 1 like
+saysI 'Area: ' em €circle.area() em ', Perimeter: ' em €circle.perimeter() like
+saysI 'X: ' em €circle.€x em ', Y: ' em €circle.€y like
+saysI 'Inherited Area: ' em €circle.inheritedArea() em ', Inherited Perimeter: ' em €circle.inheritedPerimeter() like

@@ -31,7 +31,7 @@ class KedParser(Parser):
         ("left", PLUS, MINUS),
         ("left", TIMES, DIVIDE, MOD),
         ("right", UMINUS),
-        ("left", "(", "["),
+        ("left", "(", "[", ".", ","),
     )
 
     @_("statements")
@@ -330,17 +330,18 @@ class KedParser(Parser):
     def postfix_expression(self, p: YaccProduction):
         return ast.Subscript(p.postfix_expression, p.expression)
 
-    @_('postfix_expression "(" ")"')
-    def postfix_expression(self, p: YaccProduction):
-        return ast.Call(p.postfix_expression, [])
-
     @_('postfix_expression "(" argument_list ")"')
     def postfix_expression(self, p: YaccProduction):
         return ast.Call(p.postfix_expression, p.argument_list)
 
     @_('postfix_expression "." NAME')
+    @_('postfix_expression "." VARIABLE')
     def postfix_expression(self, p: YaccProduction):
-        return ast.Attribute(p.postfix_expression, p.NAME)
+        return ast.Attribute(p.postfix_expression, p[-1])
+
+    @_("")
+    def argument_list(self, p: YaccProduction):
+        return []
 
     @_('argument_list "," argument')
     def argument_list(self, p: YaccProduction):
@@ -374,9 +375,21 @@ class KedParser(Parser):
     def element(self, p: YaccProduction):
         return p.assignment_expression
 
-    @_("identifier", "array", "number", "string", "boolean", "null")
+    @_(
+        "identifier",
+        "array",
+        "number",
+        "string",
+        "boolean",
+        "null",
+        "constructor_expression",
+    )
     def primary_expression(self, p: YaccProduction):
         return p[0]
+
+    @_('NEW identifier "(" argument_list ")"')
+    def constructor_expression(self, p: YaccProduction):
+        return ast.Constructor(p.identifier, p.argument_list)
 
     @_('"(" expression ")"')
     def primary_expression(self, p: YaccProduction):
@@ -390,9 +403,9 @@ class KedParser(Parser):
     def assignment_expression(self, p: YaccProduction):
         return p[0]
 
-    @_('variable "=" assignment_expression')
+    @_('postfix_expression "=" assignment_expression')
     def assignment_expression(self, p: YaccProduction):
-        return ast.Assign(p.variable, p.assignment_expression)
+        return ast.Assign(p.postfix_expression, p.assignment_expression)
 
     @_("NOT", '"!"')
     def unary_operator(self, p: YaccProduction):
