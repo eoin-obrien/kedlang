@@ -1,6 +1,3 @@
-from kedlang.ast import Expression
-
-
 class BaseKedException(Exception):
     """Base class for Ked exceptions."""
 

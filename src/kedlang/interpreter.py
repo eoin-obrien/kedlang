@@ -1,19 +1,15 @@
 import itertools
-import math
 import operator
 import os
 import time
-from sys import stderr
 from typing import Any, Optional, Union
 
-from sly.lex import Token
-
 from . import ast, exceptions, lexer, parser, visitor
-from .builtins import get_rebel_class, to_ked_boolean, to_ked_number, to_ked_string
+from .builtins import get_rebel_class
 from .callstack import CallStack, Frame
 from .cwdstack import CWDStack
 from .symbol import Namespace, NamespacedSymbol, Symbol
-from .types import KedClass, KedFunction, KedObject
+from .types import KedClass, KedFunction, KedList, KedObject
 
 
 class KedInterpreter(visitor.KedASTVisitor):
@@ -36,9 +32,9 @@ class KedInterpreter(visitor.KedASTVisitor):
         self.rebel_class = get_rebel_class()
 
         # Init builtins
-        self.current_scope.declare(Symbol("boolean"), to_ked_boolean)
-        self.current_scope.declare(Symbol("number"), to_ked_number)
-        self.current_scope.declare(Symbol("string"), to_ked_string)
+        self.current_scope.declare(Symbol("boolean"), self.to_boolean)
+        self.current_scope.declare(Symbol("number"), self.to_number)
+        self.current_scope.declare(Symbol("string"), self.to_string)
         self.current_scope.declare(Symbol("len"), self.get_length)
         self.current_scope.declare(self.rebel_class.name, self.rebel_class)
 
@@ -55,6 +51,30 @@ class KedInterpreter(visitor.KedASTVisitor):
     def current_scope(self):
         return self.call_stack.peek()
 
+    def to_string(self, value="") -> str:
+        if isinstance(value, KedList):
+            elements = [self.to_string(self.resolve(el)) for el in value.elements]
+            return f"[{', '.join(elements)}]"
+
+        if value is None:
+            return "nuttin"
+        elif isinstance(value, bool):
+            return "gospel" if value else "bull"
+        elif isinstance(value, float):
+            return str(int(value)) if value.is_integer() else str(value)
+        return str(value)
+
+    def to_number(self, value=None) -> float:
+        if value is None:
+            return 0
+        try:
+            return float(value)
+        except ValueError:
+            return float("nan")
+
+    def to_boolean(self, value=None) -> bool:
+        return bool(value)
+
     def get_length(self, target: Union[ast.KedAST, Symbol, Any]):
         return len(self.resolve(target))
 
@@ -64,11 +84,20 @@ class KedInterpreter(visitor.KedASTVisitor):
             target = self.visit(target)
 
         # Resolve symbols from the current stack frame
+        # if isinstance(target, KedList):
+        # return [self.resolve(el) for el in target.elements]
+
+        # Resolve symbols from the current stack frame
         if isinstance(target, Symbol):
             return self.current_scope.fetch(target)
 
         # Value types are returned as-is
         return target
+
+    def resolve_list(self, target: Union[ast.KedAST, Symbol, Any]):
+        if isinstance(target, KedList):
+            return [self.resolve(el) for el in target.elements]
+        return self.resolve(target)
 
     def resolve_spread(self, target: Union[ast.KedAST, Symbol, Any]):
         def resolve_element(element):
@@ -114,7 +143,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         return self.visit(node.value)
 
     def visit_If(self, node: ast.If) -> None:
-        for statement in node.body if self.visit(node.test) else node.orelse:
+        for statement in node.body if self.resolve(node.test) else node.orelse:
             self.visit(statement)
 
     def visit_Try(self, node: ast.Try) -> None:
@@ -169,7 +198,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         raise exceptions.Return(self.resolve(node.value))
 
     def visit_Print(self, node: ast.Print) -> None:
-        value = to_ked_string(self.resolve(node.value))
+        value = self.to_string(self.resolve(node.value))
         print(value)
 
     def visit_Import(self, node: ast.Import) -> None:
@@ -201,16 +230,16 @@ class KedInterpreter(visitor.KedASTVisitor):
         }
 
         if op in number_ops:
-            return number_ops[op](to_ked_number(left), to_ked_number(right))
+            return number_ops[op](self.to_number(left), self.to_number(right))
 
         string_ops = {
             ast.Concat: operator.add,
         }
 
         if op in string_ops:
-            return string_ops[op](to_ked_string(left), to_ked_string(right))
+            return string_ops[op](self.to_string(left), self.to_string(right))
 
-        is_eq = lambda a, b: to_ked_string(a) == to_ked_string(b)
+        is_eq = lambda a, b: self.to_string(a) == self.to_string(b)
         is_strict_eq = lambda a, b: a == b and type(a) == type(b)
         logic_ops = {
             ast.And: operator.and_,
@@ -233,8 +262,8 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         if op in relational_ops:
             if str in [type(left), type(right)]:
-                left = to_ked_string(left)
-                right = to_ked_string(right)
+                left = self.to_string(left)
+                right = self.to_string(right)
             return relational_ops[op](left, right)
 
         raise exceptions.KedSyntaxError("Unknown binary operator " + op.__name__)
@@ -243,9 +272,9 @@ class KedInterpreter(visitor.KedASTVisitor):
         operand = self.resolve(node.operand)
 
         if isinstance(node.op, ast.UAdd):
-            return +to_ked_number(operand)
+            return +self.to_number(operand)
         elif isinstance(node.op, ast.USub):
-            return -to_ked_number(operand)
+            return -self.to_number(operand)
         elif isinstance(node.op, ast.Not):
             return not operand
 
@@ -386,11 +415,17 @@ class KedInterpreter(visitor.KedASTVisitor):
         return self.visit(node.variable) in self.current_scope
 
     def visit_List(self, node: ast.List) -> list:
-        return self.resolve_spread(node.elements)
+        elements = self.resolve_spread(node.elements)
+        list_impl = KedList(size=len(elements))
+        for key, value in enumerate(elements):
+            symbol = NamespacedSymbol(key, list_impl)
+            list_impl[key] = symbol
+            self.current_scope.declare(symbol, self.resolve(value))
+        return list_impl
 
     def visit_Subscript(self, node: ast.Subscript) -> Any:
         value = self.resolve(node.value)
-        index = int(to_ked_number(self.resolve(node.index)))
+        index = int(self.to_number(self.resolve(node.index)))
         return value[index]
 
     def visit_Spread(self, node: ast.Spread) -> list:

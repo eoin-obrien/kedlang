@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 
 class Symbol:
@@ -23,22 +23,30 @@ class Symbol:
 
 
 class Namespace:
-    NamespaceDict = Dict[str, Symbol]
+    NamespaceDict = Dict[Union[str, int], Symbol]
 
-    def __init__(self, class_type, members: Optional[NamespaceDict] = None) -> None:
-        self.class_type = class_type
+    __next_unique_id = 0
+
+    @classmethod
+    def get_unique_id(cls) -> int:
+        unique_id = cls.__next_unique_id
+        cls.__next_unique_id += 1
+        return unique_id
+
+    def __init__(self, members: Optional[NamespaceDict] = None) -> None:
         self.members = members or {}
+        self.unique_id = self.get_unique_id()
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.members}>"
 
-    def __getitem__(self, key: str) -> Symbol:
+    def __getitem__(self, key) -> Symbol:
         return self.members[key]
 
-    def __setitem__(self, key: str, value: Symbol) -> None:
+    def __setitem__(self, key, value: Symbol) -> None:
         self.members[key] = value
 
-    def __contains__(self, key: str) -> bool:
+    def __contains__(self, key) -> bool:
         return key in self.members
 
     def __iter__(self):
@@ -46,7 +54,7 @@ class Namespace:
 
     @property
     def name(self) -> str:
-        return hex(id(self))
+        return hex(self.unique_id)
 
 
 class NamespacedSymbol(Symbol):

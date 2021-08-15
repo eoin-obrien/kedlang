@@ -18,6 +18,7 @@ remember printList(€list) {
         saysI 'list[' em €i em '] = ' em €list[€i] like
         €i = €i plus 1 like
     }
+    saysI '' like
 }
 
 remember printSpreadList(...€list) {
@@ -26,5 +27,11 @@ remember printSpreadList(...€list) {
 
 printList(€source) like
 printSpreadList(...€source) like
+
+saysI €destination like
+printSpreadList(...€destination) like
 printSpreadList(1, 2, 3) like
 saysI €source[-1] like
+
+€source[0] = 5 like
+saysI €source[0] like

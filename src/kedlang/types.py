@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 from kedlang.exceptions import KedSemanticError
 from kedlang.symbol import Namespace
@@ -41,7 +41,7 @@ class KedFunction:
 class KedClass:
     def __init__(self, name, base, body) -> None:
         self.name, self.base, self.body = name, base, body
-        self.namespace = Namespace(self)
+        self.namespace = Namespace()
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name}>"
@@ -74,7 +74,7 @@ class KedClass:
 class KedObject:
     def __init__(self, class_type: KedClass) -> None:
         self.class_type = class_type
-        self.namespace = Namespace(class_type)
+        self.namespace = Namespace()
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.class_type.name}>"
@@ -90,6 +90,34 @@ class KedObject:
 
     def __contains__(self, key) -> bool:
         return key in self.namespace
+
+    def extends(self, class_type: KedClass) -> bool:
+        return self.class_type.extends(class_type)
+
+    @property
+    def name(self):
+        return self.namespace.name
+
+
+class KedList:
+    def __init__(self, size=0) -> None:
+        self.namespace = Namespace()
+        self.elements = [None] * size
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.elements}>"
+
+    def __getitem__(self, key) -> Any:
+        return self.elements[key]
+
+    def __setitem__(self, key, value) -> None:
+        self.elements[key] = value
+
+    def __contains__(self, key) -> bool:
+        return key in self.elements
+
+    def __len__(self) -> int:
+        return len(self.elements)
 
     def extends(self, class_type: KedClass) -> bool:
         return self.class_type.extends(class_type)
