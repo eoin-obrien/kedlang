@@ -19,6 +19,7 @@ class KedLexer(Lexer):
         STRING,
         NAME,
         VARIABLE,
+        SCOPE_RESOLUTION,
         SPREAD,
         IF,
         ELIF,
@@ -58,6 +59,7 @@ class KedLexer(Lexer):
         CLASS,
         EXTENDS,
         NEW,
+        STATIC,
     }
 
     literals = {"(", ")", "[", "]", "{", "}", "=", "+", "-", ".", ",", "!"}
@@ -65,6 +67,7 @@ class KedLexer(Lexer):
     # String containing ignored characters
     ignore = " \t"
 
+    SCOPE_RESOLUTION = r"::"
     SPREAD = r"\.\.\."
 
     # Constants
@@ -91,10 +94,7 @@ class KedLexer(Lexer):
     NAME[r"new"] = NEW
     NAME[r"class"] = CLASS
     NAME[r"isTheBulbOff"] = EXTENDS
-    # TODO
-    # NAME[r"youKnowYourDa"] = SUPER
-    # NAME[r"youKnowYourMa"] = SUPER
-    # NAME[r"youKnowYourself"] = THIS
+    NAME[r"static"] = STATIC
 
     # Conditionals
     NAME[r"eh"] = IF

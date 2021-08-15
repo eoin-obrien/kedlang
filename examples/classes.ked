@@ -1,44 +1,53 @@
 remember €pi = 3.14159 like
 
 class Shape {
-    remember €x = 0 like
-    remember €y = 0 like
+    €x = 0 like
+    €y = 0 like
 
-    remember constructor() {
+    constructor() {
         saysI 'Shape.constructor' like
     }
 
-    remember area() {}
-    remember perimeter() {}
+    area() {}
+    perimeter() {}
+
+    static €answer = 42 like
+    static getAnswer() {
+        return youKnowYourself::€answer like
+    }
 }
 
 class Circle isTheBulbOff Shape {
-    remember €radius like
+    €radius like
 
-    remember constructor() {
+    constructor() {
         youKnowYourDa.constructor() like
         €radius = 0 like
         saysI 'Circle.constructor' like
     }
 
-    remember getRadius() {
+    getRadius() {
         return youKnowYourself.€radius like
     }
 
-    remember area() {
+    area() {
         return €pi times youKnowYourself.getRadius() times youKnowYourself.getRadius() like
     }
 
-    remember perimeter() {
+    perimeter() {
         return 2 times €pi times youKnowYourself.€radius like
     }
 
-    remember inheritedArea() {
+    inheritedArea() {
         return youKnowYourDa.area() like
     }
 
-    remember inheritedPerimeter() {
+    inheritedPerimeter() {
         return youKnowYourMa.area() like
+    }
+
+    getAnswer() {
+        return youKnowYourself::getAnswer() plus 3 like
     }
 }
 
@@ -49,3 +58,6 @@ remember €otherCircle = new Circle() like
 saysI 'Area: ' em €circle.area() em ', Perimeter: ' em €circle.perimeter() like
 saysI 'X: ' em €circle.€x em ', Y: ' em €circle.€y like
 saysI 'Inherited Area: ' em €circle.inheritedArea() em ', Inherited Perimeter: ' em €circle.inheritedPerimeter() like
+saysI 'Static Answer: ' em Circle::getAnswer() like
+saysI 'Static-on-instance Answer: ' em €circle::getAnswer() like
+saysI 'Method Answer: ' em €circle.getAnswer() like

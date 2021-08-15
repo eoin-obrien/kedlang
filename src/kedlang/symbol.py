@@ -25,7 +25,8 @@ class Symbol:
 class Namespace:
     NamespaceDict = Dict[str, Symbol]
 
-    def __init__(self, members: Optional[NamespaceDict] = None) -> None:
+    def __init__(self, class_type, members: Optional[NamespaceDict] = None) -> None:
+        self.class_type = class_type
         self.members = members or {}
 
     def __repr__(self) -> str:
@@ -36,6 +37,9 @@ class Namespace:
 
     def __setitem__(self, key: str, value: Symbol) -> None:
         self.members[key] = value
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.members
 
     @property
     def name(self) -> str:

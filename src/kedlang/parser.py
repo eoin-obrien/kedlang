@@ -78,9 +78,30 @@ class KedParser(Parser):
     def class_body_declarations(self, p: YaccProduction):
         return [*p.class_body_declarations, p.class_body_declaration]
 
-    @_("variable_declaration", "function_declaration")
+    @_("field_declaration", "method_declaration")
     def class_body_declaration(self, p: YaccProduction):
         return p[0]
+
+    # TODO field_declaration
+    @_("variable LIKE")
+    def field_declaration(self, p: YaccProduction):
+        return ast.Declare(p.variable)
+
+    @_('variable "=" assignment_expression LIKE')
+    def field_declaration(self, p: YaccProduction):
+        return ast.Declare(p.variable, p.assignment_expression)
+
+    @_("STATIC field_declaration")
+    def field_declaration(self, p: YaccProduction):
+        return ast.Static(p.field_declaration)
+
+    @_('name "(" spread_parameter_list ")" statement')
+    def method_declaration(self, p: YaccProduction):
+        return ast.FunctionDef(p.name, p.spread_parameter_list, p.statement)
+
+    @_("STATIC method_declaration")
+    def method_declaration(self, p: YaccProduction):
+        return ast.Static(p.method_declaration)
 
     @_("UNDECLARE variable LIKE")
     def undeclaration(self, p: YaccProduction):
@@ -338,6 +359,11 @@ class KedParser(Parser):
     @_('postfix_expression "." VARIABLE')
     def postfix_expression(self, p: YaccProduction):
         return ast.Attribute(p.postfix_expression, p[-1])
+
+    @_("postfix_expression SCOPE_RESOLUTION NAME")
+    @_("postfix_expression SCOPE_RESOLUTION VARIABLE")
+    def postfix_expression(self, p: YaccProduction):
+        return ast.ScopeResolution(p.postfix_expression, p[-1])
 
     @_("")
     def argument_list(self, p: YaccProduction):

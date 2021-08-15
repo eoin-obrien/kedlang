@@ -164,6 +164,14 @@ class FunctionDef(Statement):
         return self.__params[-1].value
 
 
+class Static(Statement):
+    def __init__(self, statement: Statement) -> None:
+        self.statement = statement
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.statement}>"
+
+
 class ClassDef(Statement):
     def __init__(self, name: Name, base: Name, body: Statement) -> None:
         self.name, self.base, self.body = name, base, body
@@ -283,6 +291,10 @@ class Attribute(Expression):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.value} {self.attr}>"
+
+
+class ScopeResolution(Attribute):
+    pass
 
 
 class Subscript(Expression):

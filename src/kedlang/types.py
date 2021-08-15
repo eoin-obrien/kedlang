@@ -1,5 +1,8 @@
 from typing import Any, Callable, Dict, Optional
 
+from kedlang.exception import SemanticError
+from kedlang.symbol import Namespace
+
 
 class KedBoolean:
     def __init__(self, value: Optional[Any]) -> None:
@@ -38,12 +41,27 @@ class KedFunction:
 class KedClass:
     def __init__(self, name, base, body) -> None:
         self.name, self.base, self.body = name, base, body
+        self.statics = Namespace(self)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.name}>"
 
     def __str__(self) -> str:
         return f"[Class {self.name}]"
+
+    def __getitem__(self, key) -> Any:
+        if key in self.statics:
+            return self.statics[key]
+        elif self.base is not None:
+            return self.base[key]
+        else:
+            raise SemanticError(f"Static attribute {key} does not exist on {self}")
+
+    def __setitem__(self, key, value) -> None:
+        self.statics[key] = value
+
+    def __contains__(self, key) -> bool:
+        return key in self.statics
 
 
 class KedObject:

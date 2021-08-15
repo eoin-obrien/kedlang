@@ -259,13 +259,28 @@ class KedInterpreter(visitor.KedASTVisitor):
         name = self.visit(node.name)
         base = self.resolve(node.base)
 
-        class_body = [stmt for stmt in node.body]
-        if base is not None:
-            class_body = [stmt for stmt in base.body] + class_body
+        statics = [stmt for stmt in node.body if isinstance(stmt, ast.Static)]
+        members = [stmt for stmt in node.body if not isinstance(stmt, ast.Static)]
 
-        impl = KedClass(name, base, node.body)
+        class_impl = KedClass(name, base, members)
 
-        self.current_scope.declare(name, impl)
+        # Construct static class members
+        static_frame = Frame(name, parent=self.current_scope)
+        static_frame.declare(Symbol("youKnowYourself"), class_impl)
+        static_frame.declare(Symbol("youKnowYourDa"), base)
+        static_frame.declare(Symbol("youKnowYourMa"), base)
+        self.call_stack.push(static_frame)
+        for stmt in statics:
+            self.visit(stmt)
+        self.call_stack.pop()
+
+        # Declare static class members in namespace
+        for key, value in static_frame._members.items():
+            symbol = NamespacedSymbol(key.name, class_impl)
+            class_impl[key.name] = symbol
+            self.current_scope.declare(symbol, value)
+
+        self.current_scope.declare(name, class_impl)
 
     def visit_Constructor(self, node: ast.Constructor) -> Namespace:
         class_type = self.resolve(node.class_type)
@@ -282,8 +297,27 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         return instance
 
+    def visit_Static(self, node: ast.Static) -> Any:
+        return self.visit(node.statement)
+
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         value = self.resolve(node.value)
+        return value[node.attr]
+
+    def visit_ScopeResolution(self, node: ast.ScopeResolution) -> Any:
+        value = self.resolve(node.value)
+
+        # If value is a namespace, operate on its class
+        if isinstance(value, Namespace):
+            value = value.class_type
+
+        # If value is neither a class nor an object, raise an exception
+        if not isinstance(value, KedClass):
+            raise exception.SemanticError(
+                f"Operator '::' must be used on a class or object, not '{type(value).__name__}'"
+            )
+
+        # Return attribute from statics
         return value[node.attr]
 
     def visit_IsDeclared(self, node: ast.IsDeclared) -> bool:
@@ -325,7 +359,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         else:
             base_instance = None
 
-        instance = Namespace()
+        instance = Namespace(class_type)
 
         # Execute class body to create attributes
         frame = Frame(class_type.name, parent=self.current_scope)
