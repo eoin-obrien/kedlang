@@ -51,6 +51,7 @@ class KedLexer(Lexer):
         IS_DECLARED,
         LIKE,
         PRINT,
+        INPUT,
         SLEEP,
         NOOP,
         IMPORT,
@@ -155,6 +156,7 @@ class KedLexer(Lexer):
     # Utilities
     NAME[r"like"] = LIKE
     NAME[r"saysI"] = PRINT
+    NAME[r"storyBoi"] = INPUT
     NAME[r"holdOn"] = SLEEP
     NAME[r"iWillYa"] = NOOP
     NAME[r"yaTwoMinutesThereNow"] = NOOP

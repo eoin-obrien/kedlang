@@ -1,0 +1,2 @@
+remember €name = storyBoi("Enter your name: ") like
+saysI "Your name is " em €name like

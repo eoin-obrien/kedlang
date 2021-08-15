@@ -391,6 +391,14 @@ class Constant(Expression):
         return f"<{self.__class__.__name__} {self.token.value}>"
 
 
+class Input(Expression):
+    def __init__(self, prompt: Expression) -> None:
+        self.prompt = prompt
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.prompt}>"
+
+
 class NoOp(Expression):
     pass
 

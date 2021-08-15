@@ -445,9 +445,15 @@ class KedParser(Parser):
         "boolean",
         "null",
         "constructor_expression",
+        "input_expression",
     )
     def primary_expression(self, p: YaccProduction):
         return p[0]
+
+    @_('INPUT "(" expression ")"')
+    # @_('INPUT expression')
+    def input_expression(self, p: YaccProduction):
+        return ast.Input(p.expression)
 
     @_('NEW identifier "(" argument_list ")"')
     def constructor_expression(self, p: YaccProduction):

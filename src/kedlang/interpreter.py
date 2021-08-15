@@ -3,7 +3,7 @@ import math
 import operator
 import os
 import time
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from sly.lex import Token
 
@@ -238,6 +238,13 @@ class KedInterpreter(visitor.KedASTVisitor):
             return not operand
 
         raise TypeError("Unknown unary operator " + node.op.__class__.__name__)
+
+    def visit_Input(self, node: ast.Input) -> Optional[str]:
+        try:
+            return input(self.resolve(node.prompt))
+        except EOFError:
+            print() # Bring the prompt to a new line
+            return None
 
     def visit_NoOp(self, node: ast.NoOp) -> None:
         pass
