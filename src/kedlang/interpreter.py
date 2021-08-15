@@ -5,8 +5,11 @@ import os
 import time
 from typing import Any, Union
 
+from sly.lex import Token
+
 from . import ast, exception, lexer, parser, visitor
-from .builtins import to_ked_boolean, to_ked_number, to_ked_string
+from .builtins import (get_rebel_class, to_ked_boolean, to_ked_number,
+                       to_ked_string)
 from .callstack import CallStack, Frame
 from .cwdstack import CWDStack
 from .symbol import Namespace, NamespacedSymbol, Symbol
@@ -29,11 +32,15 @@ class KedInterpreter(visitor.KedASTVisitor):
         self.call_stack = CallStack()
         self.call_stack.push(Frame(name="global"))
 
+        # Exceptions
+        self.rebel_class = get_rebel_class()
+
         # Init builtins
         self.current_scope.declare(Symbol("boolean"), to_ked_boolean)
         self.current_scope.declare(Symbol("number"), to_ked_number)
         self.current_scope.declare(Symbol("string"), to_ked_string)
         self.current_scope.declare(Symbol("len"), self.get_length)
+        self.current_scope.declare(self.rebel_class.name, self.rebel_class)
 
     def interpret(self, ast: ast.KedAST) -> Any:
         return self.visit(ast)
@@ -68,8 +75,6 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         return list(itertools.chain(*map(resolve_element, target)))
 
-    # TODO exceptions
-
     def visit_Program(self, node: ast.Program) -> None:
         try:
             for statement in node.statements:
@@ -102,6 +107,37 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_If(self, node: ast.If) -> None:
         for statement in node.body if self.visit(node.test) else node.orelse:
             self.visit(statement)
+
+    def visit_Try(self, node: ast.Try) -> None:
+        try:
+            for stmt in node.body:
+                self.visit(stmt)
+        except exception.KedException as exc:
+            rebel = self.resolve(exc.value)
+            handler = next(
+                hdlr for hdlr in node.handlers if rebel.extends(self.resolve(hdlr.type))
+            )
+            if handler is not None:
+                # Bind rebel to name in scope
+                name = self.visit(handler.name)
+                if name not in self.current_scope:
+                    self.current_scope.declare(name, rebel)
+                else:
+                    self.current_scope.assign(name, rebel)
+                # Execute handler body
+                for stmt in handler.body:
+                    self.visit(stmt)
+            else:
+                raise exc
+        finally:
+            for stmt in node.finallybody:
+                self.visit(stmt)
+
+    def visit_Throw(self, node: ast.Throw) -> None:
+        exc = self.resolve(node.exc)
+        if not isinstance(exc, KedObject) or not exc.extends(self.rebel_class):
+            raise TypeError("rebels must derive from Rebel")
+        raise exception.KedException(exc)
 
     def visit_While(self, node: ast.While) -> None:
         while self.visit(node.test):
@@ -293,9 +329,10 @@ class KedInterpreter(visitor.KedASTVisitor):
         instance = self.__construct_class_instance(class_type)
 
         # Invoke constructor if one exists in the inheritance hierarchy
-        constructor = self.current_scope.fetch(instance["constructor"])
-        if callable(constructor):
-            constructor(*args)
+        if "constructor" in instance:
+            constructor = self.current_scope.fetch(instance["constructor"])
+            if callable(constructor):
+                constructor(*args)
 
         return instance
 
@@ -375,7 +412,7 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         # Inherit attributes from base class instance
         if base_instance is not None:
-            for key in base_instance.attributes:
+            for key in base_instance.namespace:
                 instance[key] = base_instance[key]
 
         # Inherit attributes from base class instance

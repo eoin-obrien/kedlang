@@ -1,3 +1,6 @@
+from kedlang.ast import Expression
+
+
 class SemanticError(Exception):
     pass
 
@@ -18,3 +21,9 @@ class Return(Exception):
 
 class Exit(Exception):
     pass
+
+
+class KedException(Exception):
+    def __init__(self, value) -> None:
+        super().__init__()
+        self.value = value

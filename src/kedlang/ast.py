@@ -1,5 +1,5 @@
 import abc
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from sly.lex import Token
 
@@ -217,6 +217,44 @@ class If(Statement):
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.test} {self.body} {self.orelse}>"
+
+
+class Catch(KedAST):
+    def __init__(
+        self,
+        type: Union[Name, Variable],
+        name: Variable,
+        body: List[Statement],
+    ) -> None:
+        self.type = type
+        self.name = name
+        self.body = body
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.type} {self.name} {self.body}>"
+
+
+class Try(Statement):
+    def __init__(
+        self,
+        body: List[Statement],
+        handlers: List[Catch],
+        finallybody: List[Statement],
+    ) -> None:
+        self.body = body
+        self.handlers = handlers
+        self.finallybody = finallybody
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.body} {self.handlers} {self.finallybody}>"
+
+
+class Throw(Statement):
+    def __init__(self, exc: Expression) -> None:
+        self.exc = exc
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} {self.exc}>"
 
 
 class While(Statement):

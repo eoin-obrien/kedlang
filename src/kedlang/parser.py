@@ -18,6 +18,9 @@ class KedParser(Parser):
     # pyright: reportUndefinedVariable=false
 
     precedence = (
+        ("nonassoc", TRY),
+        ("nonassoc", CATCH),
+        ("nonassoc", FINALLY),
         ("nonassoc", IF),
         ("nonassoc", ELIF),
         ("nonassoc", ELSE),
@@ -158,6 +161,8 @@ class KedParser(Parser):
         "expression_statement",
         "compound_statement",
         "if_statement",
+        "try_statement",
+        "throw_statement",
         "iteration_statement",
         "jump_statement",
         "print_statement",
@@ -193,6 +198,38 @@ class KedParser(Parser):
     @_("ELSE statement")
     def else_statement(self, p: YaccProduction):
         return p.statement
+
+    @_("TRY statement %prec TRY")
+    def try_statement(self, p: YaccProduction):
+        return ast.Try([p.statement], [], [])
+
+    @_("TRY statement catch_statements %prec CATCH")
+    def try_statement(self, p: YaccProduction):
+        return ast.Try([p.statement], p.catch_statements, [])
+
+    @_("TRY statement catch_statements finally_statement %prec FINALLY")
+    def try_statement(self, p: YaccProduction):
+        return ast.Try([p.statement], p.catch_statements, [p.finally_statement])
+
+    @_("catch_statement")
+    def catch_statements(self, p: YaccProduction):
+        return [p.catch_statement]
+
+    @_("catch_statements catch_statement")
+    def catch_statements(self, p: YaccProduction):
+        return [*p.catch_statements, p.catch_statement]
+
+    @_('CATCH "(" identifier variable ")" statement')
+    def catch_statement(self, p: YaccProduction):
+        return ast.Catch(p.identifier, p.variable, [p.statement])
+
+    @_("FINALLY statement")
+    def finally_statement(self, p: YaccProduction):
+        return p.statement
+
+    @_("THROW expression LIKE")
+    def throw_statement(self, p: YaccProduction):
+        return ast.Throw(p.expression)
 
     @_('WHILE "(" expression ")" statement')
     def iteration_statement(self, p: YaccProduction):

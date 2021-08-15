@@ -12,6 +12,7 @@ def check_key(func):
         if not isinstance(key, Symbol):
             raise TypeError(f"Frame keys must be of type 'Symbol', got '{type(key)}'")
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -23,6 +24,11 @@ class Frame:
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} {self.__name}>"
+
+    def __contains__(self, key) -> bool:
+        return (
+            key in self._members or self.__parent is not None and key in self.__parent
+        )
 
     @check_key
     def declare(self, key: Union[Symbol, str], value=None) -> None:

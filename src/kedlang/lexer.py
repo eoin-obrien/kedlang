@@ -60,6 +60,10 @@ class KedLexer(Lexer):
         EXTENDS,
         NEW,
         STATIC,
+        TRY,
+        CATCH,
+        FINALLY,
+        THROW,
     }
 
     literals = {"(", ")", "[", "]", "{", "}", "=", "+", "-", ".", ",", "!"}
@@ -95,6 +99,12 @@ class KedLexer(Lexer):
     NAME[r"class"] = CLASS
     NAME[r"isTheBulbOff"] = EXTENDS
     NAME[r"static"] = STATIC
+
+    # Exception handling
+    NAME[r"giveItALash"] = TRY
+    NAME[r"jaHearYourMan"] = CATCH
+    NAME[r"atTheEndOfTheDay"] = FINALLY
+    NAME[r"release"] = THROW
 
     # Conditionals
     NAME[r"eh"] = IF

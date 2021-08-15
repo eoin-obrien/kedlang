@@ -1,0 +1,25 @@
+giveItALash {
+    saysI "try" like
+}
+
+giveItALash {
+    saysI "try-finally" like
+} jaHearYourMan ( Rebel €e ) {
+    saysI €e like
+}
+
+giveItALash {
+    saysI "try-catch" like
+    release new Rebel('shtory bai') like
+} jaHearYourMan ( Rebel €e ) {
+    saysI 'Rebel: ' em €e.€msg like
+}
+
+giveItALash {
+    saysI "try-catch-finally" like
+    release new Rebel('shtory bai') like
+} jaHearYourMan ( Rebel €e ) {
+    saysI 'Rebel: ' em €e.€msg like
+} atTheEndOfTheDay {
+    saysI "finally" like
+}
