@@ -68,8 +68,6 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         return list(itertools.chain(*map(resolve_element, target)))
 
-    # TODO classes
-    # TODO attributes
     # TODO exceptions
 
     def visit_Program(self, node: ast.Program) -> None:
@@ -252,7 +250,8 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_Call(self, node: ast.Call) -> Any:
         func = self.resolve(node.func)
         args = self.resolve_spread(node.args)
-        # TODO check func is function
+        if not callable(func):
+            raise exception.SemanticError(f"'{type(func).__name__}' is not callable")
         return func(*args)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -284,9 +283,12 @@ class KedInterpreter(visitor.KedASTVisitor):
 
     def visit_Constructor(self, node: ast.Constructor) -> Namespace:
         class_type = self.resolve(node.class_type)
-        # TODO pass args to constructor
         args = self.resolve_spread(node.args)
-        # TODO check class_type is actually a class
+
+        if not isinstance(class_type, KedClass):
+            raise exception.SemanticError(
+                f"'{type(class_type).__name__}' is not a class"
+            )
 
         instance = self.__construct_class_instance(class_type)
 

@@ -82,7 +82,6 @@ class KedParser(Parser):
     def class_body_declaration(self, p: YaccProduction):
         return p[0]
 
-    # TODO field_declaration
     @_("variable LIKE")
     def field_declaration(self, p: YaccProduction):
         return ast.Declare(p.variable)
