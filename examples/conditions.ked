@@ -1,0 +1,23 @@
+eh (1 is 2) {
+    saysI 'Wrong' like
+} orEvenJust {
+    saysI 'Right' like
+}
+
+eh (1 isTheHeadOff 1) {
+    saysI 'Right' like
+} orEvenJust {
+    saysI 'Wrong' like
+}
+
+remember €y like
+eh( jaKnow( €x ) ){
+	remember €z = 1 like
+}
+orEh( jaKnow( €y ) ){
+	remember €z = 2 like
+}
+orEvenJust{
+	remember €z = 0 like
+}
+saysI '€z = ' em €z like
