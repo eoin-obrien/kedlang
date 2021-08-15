@@ -1,6 +1,9 @@
+from typing import Optional
 from sly import Parser
 from sly.lex import Token
 from sly.yacc import YaccProduction
+
+from kedlang.exceptions import KedSyntaxError
 
 from . import ast, lexer
 
@@ -451,7 +454,6 @@ class KedParser(Parser):
         return p[0]
 
     @_('INPUT "(" expression ")"')
-    # @_('INPUT expression')
     def input_expression(self, p: YaccProduction):
         return ast.Input(p.expression)
 
@@ -539,5 +541,14 @@ class KedParser(Parser):
     def variable(self, p: YaccProduction):
         return ast.Variable(get_token(p))
 
-    def error(self, p: YaccProduction):
-        raise SyntaxError(f"invalid syntax on line {p.lineno} at token '{p.type}'")
+    def error(self, token: Optional[Token]):
+        if token:
+            lineno = getattr(token, "lineno", 0)
+            if lineno:
+                raise KedSyntaxError(
+                    f"Syntax error at line {lineno}, token={token.type}"
+                )
+            else:
+                raise KedSyntaxError(f"Syntax error, token={token.type}")
+        else:
+            raise KedSyntaxError("Parse error in input. EOF")

@@ -3,13 +3,13 @@ import math
 import operator
 import os
 import time
+from sys import stderr
 from typing import Any, Optional, Union
 
 from sly.lex import Token
 
-from . import ast, exception, lexer, parser, visitor
-from .builtins import (get_rebel_class, to_ked_boolean, to_ked_number,
-                       to_ked_string)
+from . import ast, exceptions, lexer, parser, visitor
+from .builtins import get_rebel_class, to_ked_boolean, to_ked_number, to_ked_string
 from .callstack import CallStack, Frame
 from .cwdstack import CWDStack
 from .symbol import Namespace, NamespacedSymbol, Symbol
@@ -42,7 +42,9 @@ class KedInterpreter(visitor.KedASTVisitor):
         self.current_scope.declare(Symbol("len"), self.get_length)
         self.current_scope.declare(self.rebel_class.name, self.rebel_class)
 
-    def interpret(self, ast: ast.KedAST) -> Any:
+    def interpret(self, code: str) -> Any:
+        tokens = self.lexer.tokenize(code)
+        ast = self.parser.parse(tokens)
         return self.visit(ast)
 
     @property
@@ -79,7 +81,14 @@ class KedInterpreter(visitor.KedASTVisitor):
         try:
             for statement in node.statements:
                 self.visit(statement)
-        except exception.Exit:
+        # Handle control flow statements
+        except exceptions.Break:
+            raise exceptions.KedSyntaxError("'ahStop' outside loop")
+        except exceptions.Continue:
+            raise exceptions.KedSyntaxError("'ahGoOn' outside loop")
+        except exceptions.Return:
+            raise exceptions.KedSyntaxError("'return' outside function")
+        except exceptions.Exit:
             pass
 
     def visit_Declare(self, node: ast.Declare) -> None:
@@ -112,7 +121,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         try:
             for stmt in node.body:
                 self.visit(stmt)
-        except exception.KedException as exc:
+        except exceptions.KedException as exc:
             rebel = self.resolve(exc.value)
             handler = next(
                 hdlr for hdlr in node.handlers if rebel.extends(self.resolve(hdlr.type))
@@ -136,27 +145,28 @@ class KedInterpreter(visitor.KedASTVisitor):
     def visit_Throw(self, node: ast.Throw) -> None:
         exc = self.resolve(node.exc)
         if not isinstance(exc, KedObject) or not exc.extends(self.rebel_class):
-            raise TypeError("rebels must derive from Rebel")
-        raise exception.KedException(exc)
+            raise exceptions.KedSemanticError("rebels must derive from Rebel")
+        message = self.resolve(exc["€msg"])
+        raise exceptions.KedException(message, exc)
 
     def visit_While(self, node: ast.While) -> None:
         while self.visit(node.test):
             try:
                 for statement in node.body:
                     self.visit(statement)
-            except exception.Continue:
+            except exceptions.Continue:
                 continue
-            except exception.Break:
+            except exceptions.Break:
                 break
 
     def visit_Continue(self, node: ast.Continue) -> None:
-        raise exception.Continue()
+        raise exceptions.Continue()
 
     def visit_Break(self, node: ast.Break) -> None:
-        raise exception.Break()
+        raise exceptions.Break()
 
     def visit_Return(self, node: ast.Return) -> None:
-        raise exception.Return(self.resolve(node.value))
+        raise exceptions.Return(self.resolve(node.value))
 
     def visit_Print(self, node: ast.Print) -> None:
         value = to_ked_string(self.resolve(node.value))
@@ -169,7 +179,9 @@ class KedInterpreter(visitor.KedASTVisitor):
                 ast = self.parser.parse(self.lexer.tokenize(f.read()))
         except FileNotFoundError:
             if node.is_strict:
-                raise ImportError(f"No such file or directory: '{import_path}'")
+                raise exceptions.KedImportError(
+                    f"No such file or directory: '{import_path}'"
+                )
         else:
             self.cwd_stack.push(import_path)
             self.visit(ast)
@@ -225,7 +237,7 @@ class KedInterpreter(visitor.KedASTVisitor):
                 right = to_ked_string(right)
             return relational_ops[op](left, right)
 
-        raise TypeError("Unknown binary operator " + op.__name__)
+        raise exceptions.KedSyntaxError("Unknown binary operator " + op.__name__)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
         operand = self.resolve(node.operand)
@@ -237,13 +249,15 @@ class KedInterpreter(visitor.KedASTVisitor):
         elif isinstance(node.op, ast.Not):
             return not operand
 
-        raise TypeError("Unknown unary operator " + node.op.__class__.__name__)
+        raise exceptions.KedSyntaxError(
+            "Unknown unary operator " + node.op.__class__.__name__
+        )
 
     def visit_Input(self, node: ast.Input) -> Optional[str]:
         try:
             return input(self.resolve(node.prompt))
         except EOFError:
-            print() # Bring the prompt to a new line
+            print()  # Bring the prompt to a new line
             return None
 
     def visit_NoOp(self, node: ast.NoOp) -> None:
@@ -253,7 +267,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         time.sleep(self.resolve(node.value))
 
     def visit_Exit(self, node: ast.Exit) -> None:
-        raise exception.Exit()
+        raise exceptions.Exit()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         name = self.visit(node.name)
@@ -280,7 +294,7 @@ class KedInterpreter(visitor.KedASTVisitor):
             try:
                 self.call_stack.push(frame)
                 self.visit(body)
-            except exception.Return as ked_return:
+            except exceptions.Return as ked_return:
                 return_value = ked_return.value
             finally:
                 self.call_stack.pop()
@@ -294,7 +308,9 @@ class KedInterpreter(visitor.KedASTVisitor):
         func = self.resolve(node.func)
         args = self.resolve_spread(node.args)
         if not callable(func):
-            raise exception.SemanticError(f"'{type(func).__name__}' is not callable")
+            raise exceptions.KedSemanticError(
+                f"'{type(func).__name__}' is not callable"
+            )
         return func(*args)
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
@@ -329,7 +345,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         args = self.resolve_spread(node.args)
 
         if not isinstance(class_type, KedClass):
-            raise exception.SemanticError(
+            raise exceptions.KedSemanticError(
                 f"'{type(class_type).__name__}' is not a class"
             )
 
@@ -359,7 +375,7 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         # If value is neither a class nor an object, raise an exception
         if not isinstance(value, KedClass):
-            raise exception.SemanticError(
+            raise exceptions.KedSemanticError(
                 f"Operator '::' must be used on a class or thing, not '{type(value).__name__}'"
             )
 

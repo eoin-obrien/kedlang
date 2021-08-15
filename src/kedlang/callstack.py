@@ -1,7 +1,7 @@
 import functools
 from typing import Any, Optional, Union
 
-from kedlang.exception import SemanticError
+from kedlang.exceptions import KedSemanticError
 from kedlang.symbol import Symbol
 
 
@@ -33,7 +33,7 @@ class Frame:
     @check_key
     def declare(self, key: Union[Symbol, str], value=None) -> None:
         if key in self._members:
-            raise SemanticError(
+            raise KedSemanticError(
                 f"Symbol {key} has already been declared in scope {self}"
             )
         self._members[key] = value
@@ -45,7 +45,7 @@ class Frame:
         elif self.__parent is not None:
             return self.__parent.fetch(key)
         else:
-            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
+            raise KedSemanticError(f"Symbol {key} does not exist in scope {self}")
 
     @check_key
     def assign(self, key: Union[Symbol, str], value: Any) -> None:
@@ -54,7 +54,7 @@ class Frame:
         elif self.__parent is not None:
             self.__parent.assign(key, value)
         else:
-            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
+            raise KedSemanticError(f"Symbol {key} does not exist in scope {self}")
 
     @check_key
     def delete(self, key: Union[Symbol, str]) -> None:
@@ -63,7 +63,7 @@ class Frame:
         elif self.__parent is not None:
             self.__parent.delete(key)
         else:
-            raise SemanticError(f"Symbol {key} does not exist in scope {self}")
+            raise KedSemanticError(f"Symbol {key} does not exist in scope {self}")
 
 
 class CallStack:

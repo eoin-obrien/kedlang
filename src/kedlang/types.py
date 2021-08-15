@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Optional
 
-from kedlang.exception import SemanticError
+from kedlang.exceptions import KedSemanticError
 from kedlang.symbol import Namespace
 
 
@@ -55,7 +55,7 @@ class KedClass:
         elif self.base is not None:
             return self.base[key]
         else:
-            raise SemanticError(f"Static attribute {key} does not exist on {self}")
+            raise KedSemanticError(f"Static attribute {key} does not exist on {self}")
 
     def __setitem__(self, key, value) -> None:
         self.namespace[key] = value

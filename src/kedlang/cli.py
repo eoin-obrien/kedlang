@@ -1,10 +1,12 @@
 import argparse
 import logging
 import os
+import signal
 import sys
 from typing import List
 
 from kedlang import __version__
+from kedlang.exceptions import BaseKedException
 
 from .interpreter import KedInterpreter
 from .lexer import KedLexer
@@ -15,6 +17,13 @@ __copyright__ = "Eoin O'Brien"
 __license__ = "gpl3"
 
 _logger = logging.getLogger(__name__)
+
+
+def sigint_handler(signum, frame):
+    exit(1)
+
+
+signal.signal(signal.SIGINT, sigint_handler)
 
 
 def file_path(value):
@@ -75,10 +84,11 @@ def main(args):
     interpreter = KedInterpreter(lexer, parser, cwd=args.file)
     with open(args.file) as f:
         code = f.read()
-    tokens = lexer.tokenize(code)
-    ast = parser.parse(tokens)
-    _logger.debug("Parsed AST: %s", ast)
-    interpreter.interpret(ast)
+
+    try:
+        interpreter.interpret(code)
+    except BaseKedException as exc:
+        sys.exit(f"{exc.__class__.__name__}: {exc.message}")
 
 
 def run():
