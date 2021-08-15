@@ -308,13 +308,13 @@ class KedInterpreter(visitor.KedASTVisitor):
         value = self.resolve(node.value)
 
         # If value is a namespace, operate on its class
-        if isinstance(value, Namespace):
+        if isinstance(value, KedObject):
             value = value.class_type
 
         # If value is neither a class nor an object, raise an exception
         if not isinstance(value, KedClass):
             raise exception.SemanticError(
-                f"Operator '::' must be used on a class or object, not '{type(value).__name__}'"
+                f"Operator '::' must be used on a class or thing, not '{type(value).__name__}'"
             )
 
         # Return attribute from statics
@@ -359,7 +359,7 @@ class KedInterpreter(visitor.KedASTVisitor):
         else:
             base_instance = None
 
-        instance = Namespace(class_type)
+        instance = KedObject(class_type)
 
         # Execute class body to create attributes
         frame = Frame(class_type.name, parent=self.current_scope)
@@ -373,8 +373,8 @@ class KedInterpreter(visitor.KedASTVisitor):
 
         # Inherit attributes from base class instance
         if base_instance is not None:
-            for key, value in base_instance.members.items():
-                instance[key] = value
+            for key in base_instance.attributes:
+                instance[key] = base_instance[key]
 
         # Inherit attributes from base class instance
         for key, value in frame._members.items():

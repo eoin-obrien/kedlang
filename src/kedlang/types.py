@@ -32,7 +32,7 @@ class KedFunction:
         return f"<{self.__class__.__name__} {self.impl.__name__}>"
 
     def __str__(self) -> str:
-        return f"[Function {self.impl.__name__}]"
+        return f"[function {self.impl.__name__}]"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.impl(*args, **kwds)
@@ -47,7 +47,7 @@ class KedClass:
         return f"<{self.__class__.__name__} {self.name}>"
 
     def __str__(self) -> str:
-        return f"[Class {self.name}]"
+        return f"[class {self.name}]"
 
     def __getitem__(self, key) -> Any:
         if key in self.statics:
@@ -65,15 +65,22 @@ class KedClass:
 
 
 class KedObject:
-    def __init__(self, class_type: KedClass, members: Optional[Dict] = None) -> None:
+    def __init__(self, class_type: KedClass) -> None:
         self.class_type = class_type
-        self.members = members or {}
+        self.attributes = Namespace(class_type)
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {self.class_type.name} {self.members}>"
+        return f"<{self.__class__.__name__} {self.class_type.name}>"
+
+    def __str__(self) -> str:
+        return f"[thing {self.class_type.name}]"
 
     def __getitem__(self, key) -> Any:
-        return self.members[key]
+        return self.attributes[key]
 
     def __setitem__(self, key, value) -> None:
-        self.members[key] = value
+        self.attributes[key] = value
+
+    @property
+    def name(self):
+        return self.attributes.name

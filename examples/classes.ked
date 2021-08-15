@@ -61,3 +61,4 @@ saysI 'Inherited Area: ' em €circle.inheritedArea() em ', Inherited Perimeter:
 saysI 'Static Answer: ' em Circle::getAnswer() like
 saysI 'Static-on-instance Answer: ' em €circle::getAnswer() like
 saysI 'Method Answer: ' em €circle.getAnswer() like
+saysI 'Object: ' em €circle like

@@ -41,6 +41,9 @@ class Namespace:
     def __contains__(self, key: str) -> bool:
         return key in self.members
 
+    def __iter__(self):
+        return self.members.__iter__()
+
     @property
     def name(self) -> str:
         return hex(id(self))
